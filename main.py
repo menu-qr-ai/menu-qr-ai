@@ -1,15 +1,20 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
+from openai import OpenAI
+import os
+
 from database import engine, Base, SessionLocal
-import models
 from models import Category, Dish
 
 # -------------------------
 # APP
 # -------------------------
 app = FastAPI()
+
+# IA CLIENT
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # -------------------------
 # CORS
@@ -28,17 +33,15 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # -------------------------
-# SEED (datos base automáticos)
+# SEED DATA
 # -------------------------
 def seed_data():
     db = SessionLocal()
 
-    # si ya hay datos, no duplicar
     if db.query(Category).first():
         db.close()
         return
 
-    # categorías base
     entrantes = Category(name="Entrantes")
     pizzas = Category(name="Pizzas")
     postres = Category(name="Postres")
@@ -46,13 +49,12 @@ def seed_data():
     db.add_all([entrantes, pizzas, postres])
     db.commit()
 
-    # platos base
     d1 = Dish(
         name="Pizza Margarita",
         description="Tomate, mozzarella y albahaca",
         price=9.99,
         allergens="gluten, lactosa",
-        category_id=2,
+        category_id=entrantes.id,
         image="https://images.unsplash.com/photo-1601924582970-9238bcb495d4"
     )
 
@@ -61,7 +63,7 @@ def seed_data():
         description="Postre italiano clásico",
         price=5.50,
         allergens="lactosa, gluten",
-        category_id=3,
+        category_id=postres.id,
         image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9"
     )
 
@@ -69,7 +71,6 @@ def seed_data():
     db.commit()
     db.close()
 
-# ejecutar seed al arrancar
 seed_data()
 
 # -------------------------
@@ -131,7 +132,49 @@ def get_dishes():
     return data
 
 # -------------------------
-# 🌐 MENÚ PÚBLICO (QR READY)
+# 🤖 IA RECOMMENDATION
+# -------------------------
+@app.get("/ai-recommendation")
+def ai_recommendation(question: str = Query(...)):
+
+    db = SessionLocal()
+    dishes = db.query(Dish).all()
+    db.close()
+
+    menu_text = "\n".join([
+        f"{d.name} - {d.description} - {d.price}€ - alérgenos: {d.allergens}"
+        for d in dishes
+    ])
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": "Eres un camarero experto. Recomienda platos del menú de forma amable y clara."
+            },
+            {
+                "role": "user",
+                "content": f"""
+MENÚ:
+{menu_text}
+
+CLIENTE:
+{question}
+
+Recomienda platos concretos del menú con explicación breve.
+"""
+            }
+        ]
+    )
+
+    return {
+        "question": question,
+        "answer": response.choices[0].message.content
+    }
+
+# -------------------------
+# 🌐 MENÚ PÚBLICO
 # -------------------------
 @app.get("/menu", response_class=HTMLResponse)
 def public_menu():
@@ -148,7 +191,6 @@ def public_menu():
                 font-family: system-ui;
                 background: #f4f5f7;
                 margin: 0;
-                padding: 0;
             }
 
             h1 {
@@ -156,7 +198,6 @@ def public_menu():
                 padding: 18px;
                 background: white;
                 margin: 0;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             }
 
             #menu {
@@ -184,7 +225,6 @@ def public_menu():
             img {
                 width: 100%;
                 border-radius: 12px;
-                margin-bottom: 8px;
             }
 
             .price {
@@ -203,11 +243,8 @@ def public_menu():
     <script>
     async function loadMenu() {
 
-        const resCats = await fetch("/categories");
-        const categories = await resCats.json();
-
-        const resDishes = await fetch("/dishes");
-        const dishes = await resDishes.json();
+        const categories = await fetch("/categories").then(r => r.json());
+        const dishes = await fetch("/dishes").then(r => r.json());
 
         const menu = document.getElementById("menu");
         menu.innerHTML = "";
@@ -219,7 +256,7 @@ def public_menu():
             section.innerHTML = `<div class="category-title">${cat.name}</div>`;
 
             dishes
-                .filter(d => Number(d.category_id) === Number(cat.id))
+                .filter(d => d.category_id === cat.id)
                 .forEach(d => {
 
                     section.innerHTML += `
