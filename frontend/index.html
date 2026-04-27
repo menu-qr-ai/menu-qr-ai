@@ -1,175 +1,242 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Menú Restaurante</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Menú App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <style>
-        :root {
-            --bg: #0e0f12;
-            --card: #171922;
-            --text: #f2f2f2;
-            --muted: #a9a9a9;
-            --accent: #ff5a5f;
-            --price: #4ade80;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #0a0b10;
+    color: white;
+}
 
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-        }
+/* TOP BAR */
+.topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10,11,16,0.95);
+    backdrop-filter: blur(10px);
+    padding: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    z-index: 10;
+}
 
-        header {
-            padding: 28px 16px 14px;
-            text-align: center;
-        }
+.topbar h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+}
 
-        header h1 {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 800;
-        }
+/* SEARCH */
+.search {
+    margin-top: 10px;
+}
 
-        header p {
-            margin: 6px 0 0;
-            font-size: 13px;
-            color: var(--muted);
-        }
+.search input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    background: #141622;
+    color: white;
+}
 
-        #menu {
-            max-width: 720px;
-            margin: auto;
-            padding: 16px;
-        }
+/* CATEGORY SCROLL */
+.categories {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 14px;
+}
 
-        .category {
-            margin-top: 26px;
-        }
+.cat {
+    white-space: nowrap;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #141622;
+    font-size: 12px;
+    cursor: pointer;
+}
 
-        .category-title {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            border-left: 3px solid var(--accent);
-            padding-left: 10px;
-        }
+/* MENU */
+#menu {
+    padding: 14px;
+    max-width: 800px;
+    margin: auto;
+}
 
-        .card {
-            background: var(--card);
-            border-radius: 14px;
-            overflow: hidden;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-        }
+/* CARD */
+.card {
+    display: flex;
+    gap: 12px;
+    background: #141622;
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
 
-        .card img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-        }
+.card img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
 
-        .content {
-            padding: 12px;
-        }
+.content {
+    padding: 10px;
+    flex: 1;
+}
 
-        .title {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
+.title {
+    font-weight: 800;
+    font-size: 14px;
+}
 
-        .desc {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 10px;
-        }
+.desc {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 4px;
+}
 
-        .bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+.bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
 
-        .price {
-            font-weight: 700;
-            color: var(--price);
-        }
+.price {
+    color: #4ade80;
+    font-weight: 700;
+}
 
-        .badge {
-            font-size: 10px;
-            background: rgba(255,90,95,0.12);
-            color: var(--accent);
-            padding: 4px 8px;
-            border-radius: 999px;
-        }
+.badge {
+    font-size: 10px;
+    color: #ff6b6b;
+}
 
-        footer {
-            text-align: center;
-            padding: 22px;
-            font-size: 11px;
-            color: #666;
-        }
-    </style>
+/* ANIMATION */
+.card {
+    transition: transform 0.15s ease;
+}
+
+.card:active {
+    transform: scale(0.98);
+}
+</style>
+
 </head>
 
 <body>
 
-<header>
-    <h1>🍽️ Restaurante Digital</h1>
-    <p>Elige, disfruta y repite</p>
-</header>
+<div class="topbar">
+    <h1>🍽️ Restaurante App</h1>
+    <div class="search">
+        <input id="search" placeholder="Buscar plato...">
+    </div>
+</div>
 
-<div id="menu">Cargando menú...</div>
+<div class="categories" id="cats"></div>
 
-<footer>Hecho con FastAPI 🚀</footer>
+<div id="menu">Cargando...</div>
 
 <script>
-async function loadMenu() {
+const API = "https://menu-qr-ai.onrender.com";
 
-    // ✅ CORREGIDO: endpoints correctos
-    const cats = await fetch("https://menu-qr-ai.onrender.com/categories").then(r => r.json());
-    const dishes = await fetch("https://menu-qr-ai.onrender.com/dishes").then(r => r.json());
+let allDishes = [];
+let allCats = [];
+
+async function load() {
+
+    allCats = await fetch(API + "/categories").then(r => r.json());
+    allDishes = await fetch(API + "/dishes").then(r => r.json());
+
+    renderCategories();
+    renderMenu();
+}
+
+function renderCategories() {
+
+    const el = document.getElementById("cats");
+    el.innerHTML = "";
+
+    allCats.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "cat";
+        div.innerText = c.name;
+
+        div.onclick = () => {
+            renderMenu(c.id);
+        };
+
+        el.appendChild(div);
+    });
+}
+
+function renderMenu(filterId = null) {
 
     const menu = document.getElementById("menu");
     menu.innerHTML = "";
 
-    cats.forEach(cat => {
+    let dishes = allDishes;
 
-        const section = document.createElement("div");
-        section.className = "category";
+    if (filterId) {
+        dishes = dishes.filter(d => d.category_id === filterId);
+    }
 
-        let html = `<div class="category-title">${cat.name}</div>`;
+    dishes.forEach(d => {
 
-        dishes
-            .filter(d => d.category_id === cat.id)
-            .forEach(d => {
+        menu.innerHTML += `
+        <div class="card">
+            <img src="${d.image || 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe'}">
 
-                html += `
-                    <div class="card">
-                        <img src="${d.image || 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe'}">
+            <div class="content">
+                <div class="title">${d.name}</div>
+                <div class="desc">${d.description}</div>
 
-                        <div class="content">
-                            <div class="title">${d.name}</div>
-                            <div class="desc">${d.description}</div>
-
-                            <div class="bottom">
-                                <div class="price">${d.price} €</div>
-                                <div class="badge">${d.allergens || ''}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-        section.innerHTML = html;
-        menu.appendChild(section);
+                <div class="bottom">
+                    <div class="price">${d.price} €</div>
+                    <div class="badge">${d.allergens || ''}</div>
+                </div>
+            </div>
+        </div>`;
     });
 }
 
-loadMenu();
+/* SEARCH */
+document.addEventListener("input", (e) => {
+
+    if (e.target.id === "search") {
+
+        const val = e.target.value.toLowerCase();
+
+        const filtered = allDishes.filter(d =>
+            d.name.toLowerCase().includes(val)
+        );
+
+        const menu = document.getElementById("menu");
+        menu.innerHTML = "";
+
+        filtered.forEach(d => {
+            menu.innerHTML += `
+            <div class="card">
+                <img src="${d.image}">
+                <div class="content">
+                    <div class="title">${d.name}</div>
+                    <div class="desc">${d.description}</div>
+                    <div class="bottom">
+                        <div class="price">${d.price} €</div>
+                        <div class="badge">${d.allergens || ''}</div>
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+});
+
+load();
 </script>
 
 </body>
