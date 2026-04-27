@@ -1,20 +1,25 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
-from openai import OpenAI
 import os
 
 from database import engine, Base, SessionLocal
 from models import Category, Dish
 
 # -------------------------
+# OPENAI (seguro)
+# -------------------------
+from openai import OpenAI
+
+client = None
+if os.getenv("OPENAI_API_KEY"):
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# -------------------------
 # APP
 # -------------------------
 app = FastAPI()
-
-# IA CLIENT
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # -------------------------
 # CORS
@@ -26,6 +31,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# -------------------------
+# ROOT → REDIRECT
+# -------------------------
+@app.get("/")
+def root():
+    return RedirectResponse(url="/menu")
 
 # -------------------------
 # DB INIT
@@ -76,17 +88,6 @@ seed_data()
 # -------------------------
 # CATEGORIES
 # -------------------------
-@app.post("/categories")
-def create_category(name: str):
-    db = SessionLocal()
-    category = Category(name=name)
-    db.add(category)
-    db.commit()
-    db.refresh(category)
-    db.close()
-    return category
-
-
 @app.get("/categories")
 def get_categories():
     db = SessionLocal()
@@ -94,9 +95,26 @@ def get_categories():
     db.close()
     return data
 
+@app.post("/categories")
+def create_category(name: str):
+    db = SessionLocal()
+    c = Category(name=name)
+    db.add(c)
+    db.commit()
+    db.refresh(c)
+    db.close()
+    return c
+
 # -------------------------
 # DISHES
 # -------------------------
+@app.get("/dishes")
+def get_dishes():
+    db = SessionLocal()
+    data = db.query(Dish).all()
+    db.close()
+    return data
+
 @app.post("/dishes")
 def create_dish(
     name: str,
@@ -108,7 +126,7 @@ def create_dish(
 ):
     db = SessionLocal()
 
-    dish = Dish(
+    d = Dish(
         name=name,
         description=description,
         price=price,
@@ -117,32 +135,27 @@ def create_dish(
         image=image
     )
 
-    db.add(dish)
+    db.add(d)
     db.commit()
-    db.refresh(dish)
+    db.refresh(d)
     db.close()
-    return dish
-
-
-@app.get("/dishes")
-def get_dishes():
-    db = SessionLocal()
-    data = db.query(Dish).all()
-    db.close()
-    return data
+    return d
 
 # -------------------------
-# 🤖 IA RECOMMENDATION
+# 🤖 IA (SAFE)
 # -------------------------
 @app.get("/ai-recommendation")
 def ai_recommendation(question: str = Query(...)):
+
+    if client is None:
+        return {"error": "OPENAI_API_KEY no configurada en Render"}
 
     db = SessionLocal()
     dishes = db.query(Dish).all()
     db.close()
 
     menu_text = "\n".join([
-        f"{d.name} - {d.description} - {d.price}€ - alérgenos: {d.allergens}"
+        f"{d.name} - {d.description} - {d.price}€ - {d.allergens}"
         for d in dishes
     ])
 
@@ -151,7 +164,7 @@ def ai_recommendation(question: str = Query(...)):
         messages=[
             {
                 "role": "system",
-                "content": "Eres un camarero experto. Recomienda platos del menú de forma amable y clara."
+                "content": "Eres un camarero experto. Recomienda platos del menú."
             },
             {
                 "role": "user",
@@ -162,121 +175,59 @@ MENÚ:
 CLIENTE:
 {question}
 
-Recomienda platos concretos del menú con explicación breve.
+Recomienda platos concretos.
 """
             }
         ]
     )
 
     return {
-        "question": question,
         "answer": response.choices[0].message.content
     }
 
 # -------------------------
-# 🌐 MENÚ PÚBLICO
+# 🌐 MENU HTML
 # -------------------------
 @app.get("/menu", response_class=HTMLResponse)
-def public_menu():
+def menu():
 
     return """
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>Menú Restaurante</title>
-
-        <style>
-            body {
-                font-family: system-ui;
-                background: #f4f5f7;
-                margin: 0;
-            }
-
-            h1 {
-                text-align: center;
-                padding: 18px;
-                background: white;
-                margin: 0;
-            }
-
-            #menu {
-                max-width: 500px;
-                margin: auto;
-                padding: 15px;
-            }
-
-            .category-title {
-                font-size: 18px;
-                font-weight: bold;
-                border-left: 4px solid #ff4d4d;
-                padding-left: 10px;
-                margin: 20px 0 10px;
-            }
-
-            .card {
-                background: white;
-                border-radius: 16px;
-                padding: 12px;
-                margin-bottom: 12px;
-                box-shadow: 0 4px 14px rgba(0,0,0,0.06);
-            }
-
-            img {
-                width: 100%;
-                border-radius: 12px;
-            }
-
-            .price {
-                font-weight: bold;
-                color: green;
-            }
-        </style>
+        <title>Menú</title>
     </head>
-
     <body>
+        <h1>🍽️ Menú del Restaurante</h1>
+        <div id="menu">Cargando...</div>
 
-    <h1>🍽️ Menú del Restaurante</h1>
+        <script>
+        async function load() {
+            const cats = await fetch("/categories").then(r => r.json());
+            const dishes = await fetch("/dishes").then(r => r.json());
 
-    <div id="menu">Cargando...</div>
+            let html = "";
 
-    <script>
-    async function loadMenu() {
+            cats.forEach(c => {
+                html += "<h2>" + c.name + "</h2>";
 
-        const categories = await fetch("/categories").then(r => r.json());
-        const dishes = await fetch("/dishes").then(r => r.json());
-
-        const menu = document.getElementById("menu");
-        menu.innerHTML = "";
-
-        categories.forEach(cat => {
-
-            const section = document.createElement("div");
-
-            section.innerHTML = `<div class="category-title">${cat.name}</div>`;
-
-            dishes
-                .filter(d => d.category_id === cat.id)
-                .forEach(d => {
-
-                    section.innerHTML += `
-                        <div class="card">
-                            <img src="${d.image || 'https://via.placeholder.com/400x200'}">
+                dishes.filter(d => d.category_id === c.id).forEach(d => {
+                    html += `
+                        <div>
                             <h3>${d.name}</h3>
                             <p>${d.description}</p>
-                            <div class="price">${d.price} €</div>
-                            <small>⚠️ ${d.allergens}</small>
+                            <b>${d.price}€</b>
                         </div>
                     `;
                 });
+            });
 
-            menu.appendChild(section);
-        });
-    }
+            document.getElementById("menu").innerHTML = html;
+        }
 
-    loadMenu();
-    </script>
-
+        load();
+        </script>
     </body>
     </html>
     """
