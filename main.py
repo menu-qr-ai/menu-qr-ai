@@ -99,7 +99,7 @@ def seed_data():
 @app.on_event("startup")
 def startup():
     seed_data()
-
+# seed_data()
 # -------------------------
 # CATEGORIES
 # -------------------------
