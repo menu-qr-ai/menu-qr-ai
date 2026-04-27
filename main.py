@@ -1,17 +1,16 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
-
 import os
 
 from database import engine, Base, SessionLocal
 from models import Restaurant, Category, Dish
 
-# -------------------------
-# OPENAI (opcional / seguro)
-# -------------------------
 from openai import OpenAI
 
+# -------------------------
+# OPENAI (opcional seguro)
+# -------------------------
 client = None
 api_key = os.getenv("OPENAI_API_KEY")
 
@@ -47,22 +46,22 @@ def root():
 Base.metadata.create_all(bind=engine)
 
 # -------------------------
-# SEED DATA
+# SEED (SAFE)
 # -------------------------
 def seed_data():
     db = SessionLocal()
 
+    # evitar duplicados
     if db.query(Restaurant).first():
         db.close()
         return
 
-    # RESTAURANTE DEMO
+    # restaurante demo
     r1 = Restaurant(name="Demo Restaurant")
-
     db.add(r1)
     db.commit()
 
-    # CATEGORÍAS
+    # categorías
     entrantes = Category(name="Entrantes", restaurant_id=r1.id)
     pizzas = Category(name="Pizzas", restaurant_id=r1.id)
     postres = Category(name="Postres", restaurant_id=r1.id)
@@ -70,7 +69,7 @@ def seed_data():
     db.add_all([entrantes, pizzas, postres])
     db.commit()
 
-    # PLATOS
+    # platos
     d1 = Dish(
         name="Pizza Margarita",
         description="Tomate, mozzarella y albahaca",
@@ -95,11 +94,14 @@ def seed_data():
     db.commit()
     db.close()
 
-# 🔥 ARRANQUE SEGURO EN RENDER
+# 🔥 ARRANQUE SEGURO (NO ROMPE RENDER)
 @app.on_event("startup")
 def startup():
-    seed_data()
-# seed_data()
+    try:
+        seed_data()
+    except Exception as e:
+        print("Seed error (ignored):", e)
+
 # -------------------------
 # CATEGORIES
 # -------------------------
