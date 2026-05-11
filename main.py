@@ -9,7 +9,7 @@ from models import Restaurant, Category, Dish
 from openai import OpenAI
 
 # -------------------------
-# OPENAI (opcional seguro)
+# OPENAI (opcional)
 # -------------------------
 client = None
 api_key = os.getenv("OPENAI_API_KEY")
@@ -41,60 +41,67 @@ def root():
     return RedirectResponse(url="/menu")
 
 # -------------------------
-# DB INIT
+# DB INIT (IMPORTANTE: evita errores en Render)
 # -------------------------
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 # -------------------------
-# SEED (SAFE)
+# SEED DATA
 # -------------------------
 def seed_data():
     db = SessionLocal()
 
-    # evitar duplicados
-    if db.query(Restaurant).first():
+    try:
+        db.query(Dish).delete()
+        db.query(Category).delete()
+        db.query(Restaurant).delete()
+        db.commit()
+
+        r1 = Restaurant(name="Demo Restaurant")
+        db.add(r1)
+        db.commit()
+        db.refresh(r1)
+
+        entrantes = Category(name="Entrantes", restaurant_id=r1.id)
+        pizzas = Category(name="Pizzas", restaurant_id=r1.id)
+        postres = Category(name="Postres", restaurant_id=r1.id)
+
+        db.add_all([entrantes, pizzas, postres])
+        db.commit()
+        db.refresh(entrantes)
+        db.refresh(pizzas)
+        db.refresh(postres)
+
+        d1 = Dish(
+            name="Pizza Margarita",
+            description="Tomate, mozzarella y albahaca",
+            price=9.99,
+            allergens="gluten, lactosa",
+            category_id=pizzas.id,
+            restaurant_id=r1.id,
+            image="https://images.unsplash.com/photo-1601924582970-9238bcb495d4?auto=format&fit=crop&w=800&q=80"
+        )
+
+        d2 = Dish(
+            name="Tiramisú",
+            description="Postre italiano clásico",
+            price=5.50,
+            allergens="lactosa, gluten",
+            category_id=postres.id,
+            restaurant_id=r1.id,
+            image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=800&q=80"
+        )
+
+        db.add_all([d1, d2])
+        db.commit()
+
+    finally:
         db.close()
-        return
 
-    # restaurante demo
-    r1 = Restaurant(name="Demo Restaurant")
-    db.add(r1)
-    db.commit()
-
-    # categorías
-    entrantes = Category(name="Entrantes", restaurant_id=r1.id)
-    pizzas = Category(name="Pizzas", restaurant_id=r1.id)
-    postres = Category(name="Postres", restaurant_id=r1.id)
-
-    db.add_all([entrantes, pizzas, postres])
-    db.commit()
-
-    # platos
-    d1 = Dish(
-        name="Pizza Margarita",
-        description="Tomate, mozzarella y albahaca",
-        price=9.99,
-        allergens="gluten, lactosa",
-        category_id=pizzas.id,
-        restaurant_id=r1.id,
-        image="https://images.unsplash.com/photo-1601924582970-9238bcb495d4"
-    )
-
-    d2 = Dish(
-        name="Tiramisú",
-        description="Postre italiano clásico",
-        price=5.50,
-        allergens="lactosa, gluten",
-        category_id=postres.id,
-        restaurant_id=r1.id,
-        image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9"
-    )
-
-    db.add_all([d1, d2])
-    db.commit()
-    db.close()
-
-# 🔥 ARRANQUE SEGURO (NO ROMPE RENDER)
+# -------------------------
+# STARTUP
+# -------------------------
 @app.on_event("startup")
 def startup():
     try:
@@ -108,19 +115,10 @@ def startup():
 @app.get("/categories")
 def get_categories():
     db = SessionLocal()
-    data = db.query(Category).all()
-    db.close()
-    return data
-
-@app.post("/categories")
-def create_category(name: str):
-    db = SessionLocal()
-    c = Category(name=name)
-    db.add(c)
-    db.commit()
-    db.refresh(c)
-    db.close()
-    return c
+    try:
+        return db.query(Category).all()
+    finally:
+        db.close()
 
 # -------------------------
 # DISHES
@@ -128,51 +126,26 @@ def create_category(name: str):
 @app.get("/dishes")
 def get_dishes():
     db = SessionLocal()
-    data = db.query(Dish).all()
-    db.close()
-    return data
-
-@app.post("/dishes")
-def create_dish(
-    name: str,
-    description: str,
-    price: float,
-    allergens: str,
-    category_id: int = None,
-    image: str = None
-):
-    db = SessionLocal()
-
-    d = Dish(
-        name=name,
-        description=description,
-        price=price,
-        allergens=allergens,
-        category_id=category_id,
-        image=image
-    )
-
-    db.add(d)
-    db.commit()
-    db.refresh(d)
-    db.close()
-    return d
+    try:
+        return db.query(Dish).all()
+    finally:
+        db.close()
 
 # -------------------------
-# IA (SAFE)
+# IA
 # -------------------------
 @app.get("/ai-recommendation")
 def ai_recommendation(question: str = Query(...)):
 
     if client is None:
-        return {"error": "IA no configurada (falta OPENAI_API_KEY en Render)"}
+        return {"error": "OPENAI_API_KEY no configurada"}
 
     db = SessionLocal()
     dishes = db.query(Dish).all()
     db.close()
 
     menu_text = "\n".join([
-        f"{d.name} - {d.description} - {d.price}€ - {d.allergens}"
+        f"{d.name} - {d.description} - {d.price}€"
         for d in dishes
     ])
 
@@ -185,15 +158,7 @@ def ai_recommendation(question: str = Query(...)):
             },
             {
                 "role": "user",
-                "content": f"""
-MENÚ:
-{menu_text}
-
-CLIENTE:
-{question}
-
-Recomienda platos concretos del menú.
-"""
+                "content": f"MENU:\n{menu_text}\n\nCLIENTE:\n{question}"
             }
         ]
     )
@@ -203,7 +168,7 @@ Recomienda platos concretos del menú.
     }
 
 # -------------------------
-# MENU HTML (UI BASE PRO)
+# MENU
 # -------------------------
 @app.get("/menu", response_class=HTMLResponse)
 def menu():
@@ -213,94 +178,45 @@ def menu():
     <html lang="es">
     <head>
         <meta charset="UTF-8">
-        <title>Menú</title>
+        <title>Menu</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <style>
             body {
                 margin: 0;
-                font-family: system-ui, -apple-system, sans-serif;
+                font-family: system-ui;
                 background: #0e0f12;
-                color: #f2f2f2;
+                color: white;
             }
 
             header {
-                padding: 28px 16px 14px;
                 text-align: center;
-            }
-
-            header h1 {
-                margin: 0;
-                font-size: 22px;
-                font-weight: 800;
-            }
-
-            header p {
-                margin: 6px 0 0;
-                font-size: 13px;
-                color: #a9a9a9;
+                padding: 30px;
             }
 
             #menu {
-                max-width: 720px;
+                max-width: 700px;
                 margin: auto;
-                padding: 16px;
-            }
-
-            .category {
-                margin-top: 26px;
-            }
-
-            .category-title {
-                font-size: 15px;
-                font-weight: 700;
-                margin-bottom: 12px;
-                border-left: 3px solid #ff5a5f;
-                padding-left: 10px;
+                padding: 20px;
             }
 
             .card {
                 background: #171922;
-                border-radius: 14px;
-                overflow: hidden;
                 margin-bottom: 12px;
+                border-radius: 12px;
+                overflow: hidden;
             }
 
             .card img {
                 width: 100%;
-                height: 160px;
+                height: 180px;
                 object-fit: cover;
+                display: block;
+                background: #222;
             }
 
             .content {
                 padding: 12px;
-            }
-
-            .title {
-                font-size: 15px;
-                font-weight: 700;
-            }
-
-            .desc {
-                font-size: 12px;
-                color: #a9a9a9;
-                margin-top: 4px;
-            }
-
-            .bottom {
-                display: flex;
-                justify-content: space-between;
-                margin-top: 8px;
-            }
-
-            .price {
-                color: #4ade80;
-                font-weight: 700;
-            }
-
-            .badge {
-                font-size: 10px;
-                color: #ff5a5f;
             }
         </style>
     </head>
@@ -309,49 +225,37 @@ def menu():
 
     <header>
         <h1>🍽️ Restaurante Digital</h1>
-        <p>Elige, disfruta y repite</p>
     </header>
 
-    <div id="menu">Cargando menú...</div>
+    <div id="menu">Cargando...</div>
 
     <script>
     async function load() {
-
         const cats = await fetch("/categories").then(r => r.json());
         const dishes = await fetch("/dishes").then(r => r.json());
 
-        const menu = document.getElementById("menu");
-        menu.innerHTML = "";
+        let html = "";
 
-        cats.forEach(cat => {
-
-            const section = document.createElement("div");
-            section.className = "category";
-
-            let html = `<div class="category-title">${cat.name}</div>`;
+        cats.forEach(c => {
+            html += "<h2>" + c.name + "</h2>";
 
             dishes
-                .filter(d => d.category_id === cat.id)
+                .filter(d => d.category_id === c.id)
                 .forEach(d => {
-
                     html += `
                         <div class="card">
-                            <img src="${d.image}">
+                            <img src="${d.image || 'https://via.placeholder.com/800x400?text=Sin+imagen'}">
                             <div class="content">
-                                <div class="title">${d.name}</div>
-                                <div class="desc">${d.description}</div>
-                                <div class="bottom">
-                                    <div class="price">${d.price} €</div>
-                                    <div class="badge">${d.allergens || ''}</div>
-                                </div>
+                                <h3>${d.name}</h3>
+                                <p>${d.description}</p>
+                                <b>${d.price}€</b>
                             </div>
                         </div>
                     `;
                 });
-
-            section.innerHTML = html;
-            menu.appendChild(section);
         });
+
+        document.getElementById("menu").innerHTML = html;
     }
 
     load();

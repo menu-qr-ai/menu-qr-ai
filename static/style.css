@@ -1,0 +1,23 @@
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+h2 {
+    margin-top: 30px;
+    font-size: 18px;
+    border-left: 4px solid #ff5a5f;
+    padding-left: 10px;
+}
+
+h3 {
+    margin: 8px 0 4px;
+}
+
+b {
+    color: #4ade80;
+}
