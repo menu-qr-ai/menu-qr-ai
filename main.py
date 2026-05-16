@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Form
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 import os
@@ -14,7 +14,6 @@ from openai import OpenAI
 # OPENAI (opcional)
 # -------------------------
 client = None
-
 api_key = os.getenv("OPENAI_API_KEY")
 
 if api_key:
@@ -49,14 +48,11 @@ def root():
 Base.metadata.create_all(bind=engine)
 
 # -------------------------
-# SEED DATA
+# SEED DATA (solo si vacío)
 # -------------------------
 def seed_data():
-
     db = SessionLocal()
-
     try:
-
         if db.query(Restaurant).first():
             return
 
@@ -100,9 +96,6 @@ def seed_data():
     finally:
         db.close()
 
-# -------------------------
-# STARTUP
-# -------------------------
 @app.on_event("startup")
 def startup():
     try:
@@ -111,7 +104,7 @@ def startup():
         print("Seed error:", e)
 
 # -------------------------
-# CATEGORIES
+# DATA
 # -------------------------
 @app.get("/categories")
 def get_categories():
@@ -121,9 +114,6 @@ def get_categories():
     finally:
         db.close()
 
-# -------------------------
-# DISHES
-# -------------------------
 @app.get("/dishes")
 def get_dishes():
     db = SessionLocal()
@@ -133,95 +123,12 @@ def get_dishes():
         db.close()
 
 # -------------------------
-# CREATE DISH
+# QR POR MESA + RESTAURANTE
 # -------------------------
-@app.post("/dishes")
-def create_dish(data: dict):
+@app.get("/qr/{restaurant_id}/{table_id}")
+def generate_qr(restaurant_id: int, table_id: int):
 
-    db = SessionLocal()
-
-    try:
-
-        dish = Dish(
-            name=data["name"],
-            description=data["description"],
-            price=data["price"],
-            allergens=data.get("allergens", ""),
-            ingredients=data.get("ingredients", ""),
-            image=data.get("image", ""),
-            category_id=data["category_id"],
-            restaurant_id=data["restaurant_id"]
-        )
-
-        db.add(dish)
-        db.commit()
-        db.refresh(dish)
-
-        return dish
-
-    finally:
-        db.close()
-
-# -------------------------
-# UPDATE DISH
-# -------------------------
-@app.put("/dishes/{dish_id}")
-def update_dish(dish_id: int, data: dict):
-
-    db = SessionLocal()
-
-    try:
-
-        dish = db.query(Dish).filter(Dish.id == dish_id).first()
-
-        if not dish:
-            raise HTTPException(status_code=404, detail="Dish not found")
-
-        dish.name = data.get("name", dish.name)
-        dish.description = data.get("description", dish.description)
-        dish.price = data.get("price", dish.price)
-        dish.allergens = data.get("allergens", dish.allergens)
-        dish.ingredients = data.get("ingredients", dish.ingredients)
-        dish.image = data.get("image", dish.image)
-
-        db.commit()
-        db.refresh(dish)
-
-        return dish
-
-    finally:
-        db.close()
-
-# -------------------------
-# DELETE DISH
-# -------------------------
-@app.delete("/dishes/{dish_id}")
-def delete_dish(dish_id: int):
-
-    db = SessionLocal()
-
-    try:
-
-        dish = db.query(Dish).filter(Dish.id == dish_id).first()
-
-        if not dish:
-            raise HTTPException(status_code=404, detail="Dish not found")
-
-        db.delete(dish)
-        db.commit()
-
-        return {"message": "Dish deleted"}
-
-    finally:
-        db.close()
-
-# -------------------------
-# QR POR MESA
-# -------------------------
-@app.get("/qr/{table_id}")
-def generate_qr(table_id: int):
-
-    url = f"https://menu-qr-ai-1.onrender.com/menu?table={table_id}"
+    url = f"https://menu-qr-ai-1.onrender.com/menu?restaurant_id={restaurant_id}&table={table_id}&lang=es"
 
     img = qrcode.make(url)
 
@@ -232,80 +139,27 @@ def generate_qr(table_id: int):
     return StreamingResponse(buffer, media_type="image/png")
 
 # -------------------------
-# IA RECOMENDACIÓN
-# -------------------------
-@app.get("/ai-recommendation")
-def ai_recommendation(question: str = Query(...)):
-
-    if client is None:
-        return {"error": "OPENAI_API_KEY no configurada"}
-
-    db = SessionLocal()
-    dishes = db.query(Dish).all()
-    db.close()
-
-    menu_text = "\n".join([
-        f"{d.name} - {d.description} - {d.price}€"
-        for d in dishes
-    ])
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Eres un camarero experto."},
-            {"role": "user", "content": f"MENU:\n{menu_text}\n\nCLIENTE:\n{question}"}
-        ]
-    )
-
-    return {"answer": response.choices[0].message.content}
-
-# -------------------------
-# IA TRADUCCIÓN PLATO (PASO 2 QUE ESTÁS HACIENDO)
-# -------------------------
-@app.get("/ai-translate-dish/{dish_id}")
-def translate_dish(dish_id: int, lang: str = "en"):
-
-    db = SessionLocal()
-    dish = db.query(Dish).filter(Dish.id == dish_id).first()
-    db.close()
-
-    if not dish:
-        return {"error": "Dish not found"}
-
-    prompt = f"""
-    Traduce este plato a {lang}:
-
-    Nombre: {dish.name}
-    Descripción: {dish.description}
-    Ingredientes: {dish.ingredients}
-    Alérgenos: {dish.allergens}
-
-    Devuelve traducción natural para restaurante.
-    """
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Eres traductor gastronómico profesional."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    return {
-        "translation": response.choices[0].message.content
-    }
-
-# -------------------------
-# MENU
+# MENU (BASE INTELIGENTE)
 # -------------------------
 @app.get("/menu", response_class=HTMLResponse)
-def menu(table: int | None = None):
+def menu(
+    restaurant_id: int = 1,
+    table: int = 0,
+    lang: str = "es"
+):
 
-    table_value = table if table else "Sin asignar"
+    db = SessionLocal()
+
+    try:
+        categories = db.query(Category).filter(Category.restaurant_id == restaurant_id).all()
+        dishes = db.query(Dish).filter(Dish.restaurant_id == restaurant_id).all()
+
+    finally:
+        db.close()
 
     return f"""
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="{lang}">
     <head>
         <meta charset="UTF-8">
         <title>Menu</title>
@@ -324,10 +178,9 @@ def menu(table: int | None = None):
                 padding: 30px;
             }}
 
-            .table {{
+            .meta {{
                 opacity: 0.7;
                 font-size: 14px;
-                margin-top: 5px;
             }}
 
             #menu {{
@@ -367,29 +220,32 @@ def menu(table: int | None = None):
     <body>
 
         <header>
-            <h1>🍽️ Restaurante Digital</h1>
-            <div class="table">Mesa: {table_value}</div>
+            <h1>🍽️ Restaurante Inteligente</h1>
+            <div class="meta">
+                Restaurante: {restaurant_id} | Mesa: {table} | Idioma: {lang}
+            </div>
         </header>
 
-        <div id="menu">Cargando...</div>
+        <div id="menu"></div>
 
         <script>
-        async function load() {{
 
-            const cats = await fetch("/categories").then(r => r.json());
-            const dishes = await fetch("/dishes").then(r => r.json());
+        const dishes = {dishes};
+        const categories = {categories};
 
-            let html = "";
+        const menu = document.getElementById("menu");
 
-            cats.forEach(c => {{
+        let html = "";
 
-                html += `<h2>${{c.name}}</h2>`;
+        categories.forEach(c => {{
 
-                dishes
-                    .filter(d => d.category_id === c.id)
-                    .forEach(d => {{
+            html += `<h2>${{c.name}}</h2>`;
 
-                        html += `
+            dishes
+                .filter(d => d.category_id === c.id)
+                .forEach(d => {{
+
+                    html += `
                         <div class="card">
                             <img src="${{d.image}}">
                             <div class="content">
@@ -398,14 +254,12 @@ def menu(table: int | None = None):
                                 <b>${{d.price}}€</b>
                             </div>
                         </div>
-                        `;
-                    }});
-            }});
+                    `;
+                }});
+        }});
 
-            document.getElementById("menu").innerHTML = html;
-        }}
+        menu.innerHTML = html;
 
-        load();
         </script>
 
     </body>
