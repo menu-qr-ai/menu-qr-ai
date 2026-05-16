@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 import os
@@ -49,20 +49,24 @@ Base.metadata.create_all(bind=engine)
 # SEED DATA
 # -------------------------
 def seed_data():
+
     db = SessionLocal()
 
     try:
-        # evitar duplicados
+
         existing_restaurant = db.query(Restaurant).first()
 
         if existing_restaurant:
             return
 
+        # restaurante
         r1 = Restaurant(name="Demo Restaurant")
+
         db.add(r1)
         db.commit()
         db.refresh(r1)
 
+        # categorías
         entrantes = Category(
             name="Entrantes",
             restaurant_id=r1.id
@@ -78,13 +82,19 @@ def seed_data():
             restaurant_id=r1.id
         )
 
-        db.add_all([entrantes, pizzas, postres])
+        db.add_all([
+            entrantes,
+            pizzas,
+            postres
+        ])
+
         db.commit()
 
         db.refresh(entrantes)
         db.refresh(pizzas)
         db.refresh(postres)
 
+        # platos demo
         d1 = Dish(
             name="Pizza Margarita",
             description="Tomate, mozzarella y albahaca",
@@ -106,6 +116,7 @@ def seed_data():
         )
 
         db.add_all([d1, d2])
+
         db.commit()
 
     finally:
@@ -116,6 +127,7 @@ def seed_data():
 # -------------------------
 @app.on_event("startup")
 def startup():
+
     try:
         seed_data()
 
@@ -159,6 +171,7 @@ def create_dish(data: dict):
     db = SessionLocal()
 
     try:
+
         dish = Dish(
             name=data["name"],
             description=data["description"],
@@ -170,7 +183,9 @@ def create_dish(data: dict):
         )
 
         db.add(dish)
+
         db.commit()
+
         db.refresh(dish)
 
         return dish
@@ -182,26 +197,40 @@ def create_dish(data: dict):
 # UPDATE DISH
 # -------------------------
 @app.put("/dishes/{dish_id}")
-def update_dish(dish_id: int, data: dict):
+def update_dish(
+    dish_id: int,
+    data: dict
+):
 
     db = SessionLocal()
 
     try:
-        dish = db.query(Dish).filter(Dish.id == dish_id).first()
+
+        dish = db.query(Dish).filter(
+            Dish.id == dish_id
+        ).first()
 
         if not dish:
+
             raise HTTPException(
                 status_code=404,
                 detail="Dish not found"
             )
 
-        dish.name = data.get("name", dish.name)
+        dish.name = data.get(
+            "name",
+            dish.name
+        )
+
         dish.description = data.get(
             "description",
             dish.description
         )
 
-        dish.price = data.get("price", dish.price)
+        dish.price = data.get(
+            "price",
+            dish.price
+        )
 
         dish.allergens = data.get(
             "allergens",
@@ -214,6 +243,7 @@ def update_dish(dish_id: int, data: dict):
         )
 
         db.commit()
+
         db.refresh(dish)
 
         return dish
@@ -230,17 +260,20 @@ def delete_dish(dish_id: int):
     db = SessionLocal()
 
     try:
+
         dish = db.query(Dish).filter(
             Dish.id == dish_id
         ).first()
 
         if not dish:
+
             raise HTTPException(
                 status_code=404,
                 detail="Dish not found"
             )
 
         db.delete(dish)
+
         db.commit()
 
         return {
@@ -251,12 +284,287 @@ def delete_dish(dish_id: int):
         db.close()
 
 # -------------------------
+# ADMIN PANEL
+# -------------------------
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+
+    db = SessionLocal()
+
+    try:
+
+        dishes = db.query(Dish).all()
+
+        categories = db.query(Category).all()
+
+        html = """
+
+        <html>
+
+        <head>
+
+            <title>Admin</title>
+
+            <style>
+
+                body{
+                    background:#0e0f12;
+                    color:white;
+                    font-family:system-ui;
+                    padding:40px;
+                    max-width:900px;
+                    margin:auto;
+                }
+
+                h1,h2,h3{
+                    margin-top:0;
+                }
+
+                input, select{
+                    width:100%;
+                    padding:12px;
+                    margin-bottom:12px;
+                    border-radius:10px;
+                    border:none;
+                    background:#1a1d26;
+                    color:white;
+                    box-sizing:border-box;
+                }
+
+                button{
+                    padding:12px 20px;
+                    border:none;
+                    border-radius:10px;
+                    background:#4f46e5;
+                    color:white;
+                    cursor:pointer;
+                    font-weight:bold;
+                }
+
+                .card{
+                    background:#171922;
+                    padding:20px;
+                    border-radius:14px;
+                    margin-top:20px;
+                    border:1px solid #2a2d39;
+                }
+
+                img{
+                    width:100%;
+                    max-height:220px;
+                    object-fit:cover;
+                    border-radius:10px;
+                    margin-bottom:10px;
+                    background:#222;
+                }
+
+                .delete{
+                    background:#dc2626;
+                    margin-top:12px;
+                }
+
+                .top{
+                    margin-bottom:40px;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <div class="top">
+
+                <h1>🍽️ Admin Panel</h1>
+
+                <form method="post" action="/admin/create">
+
+                    <input
+                        name="name"
+                        placeholder="Nombre del plato"
+                        required
+                    >
+
+                    <input
+                        name="description"
+                        placeholder="Descripción"
+                        required
+                    >
+
+                    <input
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        placeholder="Precio"
+                        required
+                    >
+
+                    <input
+                        name="image"
+                        placeholder="URL imagen"
+                    >
+
+                    <input
+                        name="allergens"
+                        placeholder="Alérgenos"
+                    >
+
+                    <select name="category_id">
+        """
+
+        for c in categories:
+
+            html += f"""
+                <option value="{c.id}">
+                    {c.name}
+                </option>
+            """
+
+        html += """
+
+                    </select>
+
+                    <button type="submit">
+                        Añadir plato
+                    </button>
+
+                </form>
+
+            </div>
+
+            <hr>
+
+            <h2>Platos actuales</h2>
+        """
+
+        for d in dishes:
+
+            html += f"""
+
+            <div class="card">
+
+                <img
+                    src="{d.image}"
+                    onerror="this.src='https://via.placeholder.com/800x400?text=Sin+imagen'"
+                >
+
+                <h3>{d.name}</h3>
+
+                <p>{d.description}</p>
+
+                <b>{d.price}€</b>
+
+                <p>
+                    <small>
+                        {d.allergens}
+                    </small>
+                </p>
+
+                <form
+                    method="post"
+                    action="/admin/delete/{d.id}"
+                >
+
+                    <button class="delete">
+                        Eliminar
+                    </button>
+
+                </form>
+
+            </div>
+            """
+
+        html += """
+
+        </body>
+
+        </html>
+        """
+
+        return html
+
+    finally:
+        db.close()
+
+# -------------------------
+# CREATE FROM ADMIN
+# -------------------------
+@app.post("/admin/create")
+def admin_create(
+
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    image: str = Form(""),
+    allergens: str = Form(""),
+    category_id: int = Form(...)
+
+):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = Dish(
+            name=name,
+            description=description,
+            price=price,
+            image=image,
+            allergens=allergens,
+            category_id=category_id,
+            restaurant_id=1
+        )
+
+        db.add(dish)
+
+        db.commit()
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+# -------------------------
+# DELETE FROM ADMIN
+# -------------------------
+@app.post("/admin/delete/{dish_id}")
+def admin_delete(dish_id: int):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(
+            Dish.id == dish_id
+        ).first()
+
+        if dish:
+
+            db.delete(dish)
+
+            db.commit()
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+# -------------------------
 # IA
 # -------------------------
 @app.get("/ai-recommendation")
-def ai_recommendation(question: str = Query(...)):
+def ai_recommendation(
+    question: str = Query(...)
+):
 
     if client is None:
+
         return {
             "error": "OPENAI_API_KEY no configurada"
         }
@@ -273,7 +581,9 @@ def ai_recommendation(question: str = Query(...)):
     ])
 
     response = client.chat.completions.create(
+
         model="gpt-4o-mini",
+
         messages=[
             {
                 "role": "system",
@@ -297,10 +607,13 @@ def ai_recommendation(question: str = Query(...)):
 def menu():
 
     return """
+
     <!DOCTYPE html>
+
     <html lang="es">
 
     <head>
+
         <meta charset="UTF-8">
 
         <title>Menu</title>
@@ -312,53 +625,54 @@ def menu():
 
         <style>
 
-            body {
-                margin: 0;
-                font-family: system-ui;
-                background: #0e0f12;
-                color: white;
+            body{
+                margin:0;
+                font-family:system-ui;
+                background:#0e0f12;
+                color:white;
             }
 
-            header {
-                text-align: center;
-                padding: 30px;
+            header{
+                text-align:center;
+                padding:30px;
             }
 
-            #menu {
-                max-width: 700px;
-                margin: auto;
-                padding: 20px;
+            #menu{
+                max-width:700px;
+                margin:auto;
+                padding:20px;
             }
 
-            .card {
-                background: #171922;
-                margin-bottom: 16px;
-                border-radius: 16px;
-                overflow: hidden;
-                border: 1px solid #2a2d39;
+            .card{
+                background:#171922;
+                margin-bottom:16px;
+                border-radius:16px;
+                overflow:hidden;
+                border:1px solid #2a2d39;
             }
 
-            .card img {
-                width: 100%;
-                height: 220px;
-                object-fit: cover;
-                display: block;
-                background: #222;
+            .card img{
+                width:100%;
+                height:220px;
+                object-fit:cover;
+                display:block;
+                background:#222;
             }
 
-            .content {
-                padding: 16px;
+            .content{
+                padding:16px;
             }
 
-            h2 {
-                margin-top: 40px;
+            h2{
+                margin-top:40px;
             }
 
-            p {
-                color: #b8bcc8;
+            p{
+                color:#b8bcc8;
             }
 
         </style>
+
     </head>
 
     <body>
@@ -373,7 +687,7 @@ def menu():
 
         <script>
 
-        async function load() {
+        async function load(){
 
             const cats = await fetch("/categories")
                 .then(r => r.json());
@@ -422,5 +736,6 @@ def menu():
         </script>
 
     </body>
+
     </html>
     """
