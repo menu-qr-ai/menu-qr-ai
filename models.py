@@ -12,6 +12,7 @@ class Restaurant(Base):
     name = Column(String)
 
     categories = relationship("Category", back_populates="restaurant")
+    dishes = relationship("Dish", back_populates="restaurant")
 
 
 # -------------------------
@@ -36,9 +37,11 @@ class Dish(Base):
     __tablename__ = "dishes"
 
     id = Column(Integer, primary_key=True, index=True)
+
     name = Column(String)
     description = Column(String)
     price = Column(Float)
+
     allergens = Column(String)
     image = Column(String)
 
@@ -46,3 +49,4 @@ class Dish(Base):
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"))
 
     category = relationship("Category", back_populates="dishes")
+    restaurant = relationship("Restaurant", back_populates="dishes")
