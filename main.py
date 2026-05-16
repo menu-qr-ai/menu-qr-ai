@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 import os
@@ -52,11 +52,12 @@ Base.metadata.create_all(bind=engine)
 # SEED DATA
 # -------------------------
 def seed_data():
+
     db = SessionLocal()
 
     try:
-        existing = db.query(Restaurant).first()
-        if existing:
+
+        if db.query(Restaurant).first():
             return
 
         r1 = Restaurant(name="Demo Restaurant")
@@ -76,6 +77,7 @@ def seed_data():
             description="Tomate, mozzarella y albahaca",
             price=9.99,
             allergens="gluten, lactosa",
+            ingredients="tomate, mozzarella, albahaca",
             category_id=pizzas.id,
             restaurant_id=r1.id,
             image="https://images.unsplash.com/photo-1513104890138-7c749659a591"
@@ -86,6 +88,7 @@ def seed_data():
             description="Postre italiano clásico",
             price=5.50,
             allergens="lactosa, gluten",
+            ingredients="mascarpone, café, cacao",
             category_id=postres.id,
             restaurant_id=r1.id,
             image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9"
@@ -130,7 +133,106 @@ def get_dishes():
         db.close()
 
 # -------------------------
-# IA (opcional)
+# CREATE DISH
+# -------------------------
+@app.post("/dishes")
+def create_dish(data: dict):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = Dish(
+            name=data["name"],
+            description=data["description"],
+            price=data["price"],
+            allergens=data.get("allergens", ""),
+            ingredients=data.get("ingredients", ""),
+            image=data.get("image", ""),
+            category_id=data["category_id"],
+            restaurant_id=data["restaurant_id"]
+        )
+
+        db.add(dish)
+        db.commit()
+        db.refresh(dish)
+
+        return dish
+
+    finally:
+        db.close()
+
+# -------------------------
+# UPDATE DISH
+# -------------------------
+@app.put("/dishes/{dish_id}")
+def update_dish(dish_id: int, data: dict):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(Dish.id == dish_id).first()
+
+        if not dish:
+            raise HTTPException(status_code=404, detail="Dish not found")
+
+        dish.name = data.get("name", dish.name)
+        dish.description = data.get("description", dish.description)
+        dish.price = data.get("price", dish.price)
+        dish.allergens = data.get("allergens", dish.allergens)
+        dish.ingredients = data.get("ingredients", dish.ingredients)
+        dish.image = data.get("image", dish.image)
+
+        db.commit()
+        db.refresh(dish)
+
+        return dish
+
+    finally:
+        db.close()
+
+# -------------------------
+# DELETE DISH
+# -------------------------
+@app.delete("/dishes/{dish_id}")
+def delete_dish(dish_id: int):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(Dish.id == dish_id).first()
+
+        if not dish:
+            raise HTTPException(status_code=404, detail="Dish not found")
+
+        db.delete(dish)
+        db.commit()
+
+        return {"message": "Dish deleted"}
+
+    finally:
+        db.close()
+
+# -------------------------
+# QR POR MESA
+# -------------------------
+@app.get("/qr/{table_id}")
+def generate_qr(table_id: int):
+
+    url = f"https://menu-qr-ai-1.onrender.com/menu?table={table_id}"
+
+    img = qrcode.make(url)
+
+    buffer = io.BytesIO()
+    img.save(buffer)
+    buffer.seek(0)
+
+    return StreamingResponse(buffer, media_type="image/png")
+
+# -------------------------
+# IA RECOMENDACIÓN
 # -------------------------
 @app.get("/ai-recommendation")
 def ai_recommendation(question: str = Query(...)):
@@ -150,37 +252,51 @@ def ai_recommendation(question: str = Query(...)):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {
-                "role": "system",
-                "content": "Eres un camarero experto. Recomienda platos del menú."
-            },
-            {
-                "role": "user",
-                "content": f"MENU:\n{menu_text}\n\nCLIENTE:\n{question}"
-            }
+            {"role": "system", "content": "Eres un camarero experto."},
+            {"role": "user", "content": f"MENU:\n{menu_text}\n\nCLIENTE:\n{question}"}
         ]
     )
 
     return {"answer": response.choices[0].message.content}
 
 # -------------------------
-# QR POR MESA
+# IA TRADUCCIÓN PLATO (PASO 2 QUE ESTÁS HACIENDO)
 # -------------------------
-@app.get("/qr/{table_id}")
-def generate_qr(table_id: int):
+@app.get("/ai-translate-dish/{dish_id}")
+def translate_dish(dish_id: int, lang: str = "en"):
 
-    url = f"https://menu-qr-ai-1.onrender.com/menu?table={table_id}"
+    db = SessionLocal()
+    dish = db.query(Dish).filter(Dish.id == dish_id).first()
+    db.close()
 
-    img = qrcode.make(url)
+    if not dish:
+        return {"error": "Dish not found"}
 
-    buffer = io.BytesIO()
-    img.save(buffer)
-    buffer.seek(0)
+    prompt = f"""
+    Traduce este plato a {lang}:
 
-    return StreamingResponse(buffer, media_type="image/png")
+    Nombre: {dish.name}
+    Descripción: {dish.description}
+    Ingredientes: {dish.ingredients}
+    Alérgenos: {dish.allergens}
+
+    Devuelve traducción natural para restaurante.
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Eres traductor gastronómico profesional."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return {
+        "translation": response.choices[0].message.content
+    }
 
 # -------------------------
-# MENU (CON MESA)
+# MENU
 # -------------------------
 @app.get("/menu", response_class=HTMLResponse)
 def menu(table: int | None = None):
@@ -258,8 +374,6 @@ def menu(table: int | None = None):
         <div id="menu">Cargando...</div>
 
         <script>
-        const table = new URLSearchParams(window.location.search).get("table");
-
         async function load() {{
 
             const cats = await fetch("/categories").then(r => r.json());

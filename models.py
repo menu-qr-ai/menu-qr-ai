@@ -9,7 +9,7 @@ class Restaurant(Base):
     __tablename__ = "restaurants"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
+    name = Column(String, nullable=False)
 
     categories = relationship("Category", back_populates="restaurant")
     dishes = relationship("Dish", back_populates="restaurant")
@@ -22,7 +22,7 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
+    name = Column(String, nullable=False)
 
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"))
 
@@ -38,12 +38,13 @@ class Dish(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String)
-    description = Column(String)
-    price = Column(Float)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
 
-    allergens = Column(String)
-    image = Column(String)
+    ingredients = Column(String, nullable=True)  # 👈 IMPORTANTE PARA IA
+    allergens = Column(String, nullable=True)
+    image = Column(String, nullable=True)
 
     category_id = Column(Integer, ForeignKey("categories.id"))
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"))
