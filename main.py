@@ -12,6 +12,7 @@ from openai import OpenAI
 # OPENAI (opcional)
 # -------------------------
 client = None
+
 api_key = os.getenv("OPENAI_API_KEY")
 
 if api_key:
@@ -54,16 +55,22 @@ def seed_data():
 
     try:
 
-        existing_restaurant = db.query(Restaurant).first()
+        existing_restaurant = db.query(
+            Restaurant
+        ).first()
 
         if existing_restaurant:
             return
 
-        # restaurante
-        r1 = Restaurant(name="Demo Restaurant")
+        # restaurante demo
+        r1 = Restaurant(
+            name="Demo Restaurant"
+        )
 
         db.add(r1)
+
         db.commit()
+
         db.refresh(r1)
 
         # categorías
@@ -363,6 +370,12 @@ def admin():
                     margin-top:12px;
                 }
 
+                .edit{
+                    background:#2563eb;
+                    margin-top:12px;
+                    margin-bottom:10px;
+                }
+
                 .top{
                     margin-bottom:40px;
                 }
@@ -461,6 +474,20 @@ def admin():
                 </p>
 
                 <form
+                    method="get"
+                    action="/admin/edit/{d.id}"
+                >
+
+                    <button
+                        class="edit"
+                        type="submit"
+                    >
+                        Editar
+                    </button>
+
+                </form>
+
+                <form
                     method="post"
                     action="/admin/delete/{d.id}"
                 >
@@ -546,6 +573,176 @@ def admin_delete(dish_id: int):
             db.delete(dish)
 
             db.commit()
+
+        return RedirectResponse(
+            url="/admin",
+            status_code=303
+        )
+
+    finally:
+        db.close()
+
+# -------------------------
+# EDIT PAGE
+# -------------------------
+@app.get(
+    "/admin/edit/{dish_id}",
+    response_class=HTMLResponse
+)
+def edit_page(dish_id: int):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(
+            Dish.id == dish_id
+        ).first()
+
+        if not dish:
+
+            return HTMLResponse(
+                "<h1>Dish not found</h1>",
+                status_code=404
+            )
+
+        html = f"""
+
+        <html>
+
+        <head>
+
+            <title>Editar Plato</title>
+
+            <style>
+
+                body{{
+                    background:#0e0f12;
+                    color:white;
+                    font-family:system-ui;
+                    padding:40px;
+                    max-width:700px;
+                    margin:auto;
+                }}
+
+                input{{
+                    width:100%;
+                    padding:12px;
+                    margin-bottom:12px;
+                    border:none;
+                    border-radius:10px;
+                    background:#1a1d26;
+                    color:white;
+                    box-sizing:border-box;
+                }}
+
+                button{{
+                    padding:12px 20px;
+                    border:none;
+                    border-radius:10px;
+                    background:#2563eb;
+                    color:white;
+                    cursor:pointer;
+                    font-weight:bold;
+                }}
+
+            </style>
+
+        </head>
+
+        <body>
+
+            <h1>✏️ Editar Plato</h1>
+
+            <form
+                method="post"
+                action="/admin/edit/{dish.id}"
+            >
+
+                <input
+                    name="name"
+                    value="{dish.name}"
+                    required
+                >
+
+                <input
+                    name="description"
+                    value="{dish.description}"
+                    required
+                >
+
+                <input
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    value="{dish.price}"
+                    required
+                >
+
+                <input
+                    name="image"
+                    value="{dish.image}"
+                >
+
+                <input
+                    name="allergens"
+                    value="{dish.allergens}"
+                >
+
+                <button type="submit">
+                    Guardar cambios
+                </button>
+
+            </form>
+
+        </body>
+
+        </html>
+        """
+
+        return html
+
+    finally:
+        db.close()
+
+# -------------------------
+# EDIT DISH
+# -------------------------
+@app.post("/admin/edit/{dish_id}")
+def edit_dish(
+
+    dish_id: int,
+
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    image: str = Form(""),
+    allergens: str = Form("")
+
+):
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(
+            Dish.id == dish_id
+        ).first()
+
+        if not dish:
+
+            raise HTTPException(
+                status_code=404,
+                detail="Dish not found"
+            )
+
+        dish.name = name
+        dish.description = description
+        dish.price = price
+        dish.image = image
+        dish.allergens = allergens
+
+        db.commit()
 
         return RedirectResponse(
             url="/admin",
