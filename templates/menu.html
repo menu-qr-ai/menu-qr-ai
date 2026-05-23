@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Menu</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>🍽️ Restaurante Inteligente</h1>
+
+        <div class="meta">
+            Restaurante: {{ restaurant_id }}
+            |
+            Mesa: {{ table }}
+            |
+            Idioma: {{ lang }}
+        </div>
+    </header>
+
+    <div id="menu"></div>
+
+    <script>
+
+        const dishes = {{ dishes | safe }};
+        const categories = {{ categories | safe }};
+
+        const menu = document.getElementById("menu");
+
+        let html = "";
+
+        categories.forEach(c => {
+
+            html += `<h2>${c.name}</h2>`;
+
+            dishes
+                .filter(d => d.category_id === c.id)
+                .forEach(d => {
+
+                    html += `
+                        <div class="card">
+                            <img src="${d.image}">
+                            <div class="content">
+                                <h3>${d.name}</h3>
+                                <p>${d.description}</p>
+
+                                <p>
+                                    <b>Ingredientes:</b>
+                                    ${d.ingredients || "No disponibles"}
+                                </p>
+
+                                <p>
+                                    <b>Alérgenos:</b>
+                                    ${d.allergens || "No especificados"}
+                                </p>
+
+                                <b>${d.price}€</b>
+                            </div>
+                        </div>
+                    `;
+                });
+        });
+
+        menu.innerHTML = html;
+
+    </script>
+
+</body>
+</html>

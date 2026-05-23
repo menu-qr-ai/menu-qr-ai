@@ -1,8 +1,14 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+
 import os
 import io
+import json
 import qrcode
 
 from database import engine, Base, SessionLocal
@@ -11,9 +17,10 @@ from models import Restaurant, Category, Dish
 from openai import OpenAI
 
 # -------------------------
-# OPENAI (opcional)
+# OPENAI
 # -------------------------
 client = None
+
 api_key = os.getenv("OPENAI_API_KEY")
 
 if api_key:
@@ -23,6 +30,13 @@ if api_key:
 # APP
 # -------------------------
 app = FastAPI()
+
+# -------------------------
+# STATIC + TEMPLATES
+# -------------------------
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
 
 # -------------------------
 # CORS
@@ -36,6 +50,11 @@ app.add_middleware(
 )
 
 # -------------------------
+# DB INIT
+# -------------------------
+Base.metadata.create_all(bind=engine)
+
+# -------------------------
 # ROOT
 # -------------------------
 @app.get("/")
@@ -43,54 +62,61 @@ def root():
     return RedirectResponse(url="/menu")
 
 # -------------------------
-# DB INIT
-# -------------------------
-Base.metadata.create_all(bind=engine)
-
-# -------------------------
-# SEED DATA (solo si vacío)
+# SEED DATA
 # -------------------------
 def seed_data():
+
     db = SessionLocal()
+
     try:
+
         if db.query(Restaurant).first():
             return
 
-        r1 = Restaurant(name="Demo Restaurant")
-        db.add(r1)
+        restaurant = Restaurant(
+            name="Demo Restaurant"
+        )
+
+        db.add(restaurant)
         db.commit()
-        db.refresh(r1)
+        db.refresh(restaurant)
 
-        entrantes = Category(name="Entrantes", restaurant_id=r1.id)
-        pizzas = Category(name="Pizzas", restaurant_id=r1.id)
-        postres = Category(name="Postres", restaurant_id=r1.id)
+        pizzas = Category(
+            name="Pizzas",
+            restaurant_id=restaurant.id
+        )
 
-        db.add_all([entrantes, pizzas, postres])
+        postres = Category(
+            name="Postres",
+            restaurant_id=restaurant.id
+        )
+
+        db.add_all([pizzas, postres])
         db.commit()
 
-        d1 = Dish(
+        pizza = Dish(
             name="Pizza Margarita",
-            description="Tomate, mozzarella y albahaca",
+            description="Tomate y mozzarella",
             price=9.99,
             allergens="gluten, lactosa",
             ingredients="tomate, mozzarella, albahaca",
-            category_id=pizzas.id,
-            restaurant_id=r1.id,
-            image="https://images.unsplash.com/photo-1513104890138-7c749659a591"
+            image="https://images.unsplash.com/photo-1513104890138-7c749659a591",
+            category_id=1,
+            restaurant_id=restaurant.id
         )
 
-        d2 = Dish(
+        tiramisu = Dish(
             name="Tiramisú",
             description="Postre italiano clásico",
             price=5.50,
-            allergens="lactosa, gluten",
-            ingredients="mascarpone, café, cacao",
-            category_id=postres.id,
-            restaurant_id=r1.id,
-            image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9"
+            allergens="gluten, lactosa",
+            ingredients="mascarpone, cacao, café",
+            image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9",
+            category_id=2,
+            restaurant_id=restaurant.id
         )
 
-        db.add_all([d1, d2])
+        db.add_all([pizza, tiramisu])
         db.commit()
 
     finally:
@@ -98,51 +124,43 @@ def seed_data():
 
 @app.on_event("startup")
 def startup():
-    try:
-        seed_data()
-    except Exception as e:
-        print("Seed error:", e)
+    seed_data()
 
 # -------------------------
-# DATA
-# -------------------------
-@app.get("/categories")
-def get_categories():
-    db = SessionLocal()
-    try:
-        return db.query(Category).all()
-    finally:
-        db.close()
-
-@app.get("/dishes")
-def get_dishes():
-    db = SessionLocal()
-    try:
-        return db.query(Dish).all()
-    finally:
-        db.close()
-
-# -------------------------
-# QR POR MESA + RESTAURANTE
+# QR
 # -------------------------
 @app.get("/qr/{restaurant_id}/{table_id}")
-def generate_qr(restaurant_id: int, table_id: int):
+def generate_qr(
+    restaurant_id: int,
+    table_id: int
+):
 
-    url = f"https://menu-qr-ai-1.onrender.com/menu?restaurant_id={restaurant_id}&table={table_id}&lang=es"
+    url = (
+        f"https://menu-qr-ai-1.onrender.com/"
+        f"menu?restaurant_id={restaurant_id}"
+        f"&table={table_id}"
+        f"&lang=es"
+    )
 
     img = qrcode.make(url)
 
     buffer = io.BytesIO()
+
     img.save(buffer)
+
     buffer.seek(0)
 
-    return StreamingResponse(buffer, media_type="image/png")
+    return StreamingResponse(
+        buffer,
+        media_type="image/png"
+    )
 
 # -------------------------
-# MENU (BASE INTELIGENTE)
+# MENU
 # -------------------------
-@app.get("/menu", response_class=HTMLResponse)
+@app.get("/menu")
 def menu(
+    request: Request,
     restaurant_id: int = 1,
     table: int = 0,
     lang: str = "es"
@@ -151,117 +169,48 @@ def menu(
     db = SessionLocal()
 
     try:
-        categories = db.query(Category).filter(Category.restaurant_id == restaurant_id).all()
-        dishes = db.query(Dish).filter(Dish.restaurant_id == restaurant_id).all()
+
+        categories = db.query(Category).filter(
+            Category.restaurant_id == restaurant_id
+        ).all()
+
+        dishes = db.query(Dish).filter(
+            Dish.restaurant_id == restaurant_id
+        ).all()
+
+        categories_json = json.dumps([
+            {
+                "id": c.id,
+                "name": c.name
+            }
+            for c in categories
+        ])
+
+        dishes_json = json.dumps([
+            {
+                "id": d.id,
+                "name": d.name,
+                "description": d.description,
+                "price": d.price,
+                "allergens": d.allergens,
+                "ingredients": d.ingredients,
+                "image": d.image,
+                "category_id": d.category_id
+            }
+            for d in dishes
+        ])
+
+        return templates.TemplateResponse(
+            "menu.html",
+            {
+                "request": request,
+                "restaurant_id": restaurant_id,
+                "table": table,
+                "lang": lang,
+                "categories": categories_json,
+                "dishes": dishes_json
+            }
+        )
 
     finally:
         db.close()
-
-    return f"""
-    <!DOCTYPE html>
-    <html lang="{lang}">
-    <head>
-        <meta charset="UTF-8">
-        <title>Menu</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-        <style>
-            body {{
-                margin: 0;
-                font-family: system-ui;
-                background: #0e0f12;
-                color: white;
-            }}
-
-            header {{
-                text-align: center;
-                padding: 30px;
-            }}
-
-            .meta {{
-                opacity: 0.7;
-                font-size: 14px;
-            }}
-
-            #menu {{
-                max-width: 700px;
-                margin: auto;
-                padding: 20px;
-            }}
-
-            .card {{
-                background: #171922;
-                margin-bottom: 16px;
-                border-radius: 16px;
-                overflow: hidden;
-                border: 1px solid #2a2d39;
-            }}
-
-            .card img {{
-                width: 100%;
-                height: 220px;
-                object-fit: cover;
-            }}
-
-            .content {{
-                padding: 16px;
-            }}
-
-            h2 {{
-                margin-top: 40px;
-            }}
-
-            p {{
-                color: #b8bcc8;
-            }}
-        </style>
-    </head>
-
-    <body>
-
-        <header>
-            <h1>🍽️ Restaurante Inteligente</h1>
-            <div class="meta">
-                Restaurante: {restaurant_id} | Mesa: {table} | Idioma: {lang}
-            </div>
-        </header>
-
-        <div id="menu"></div>
-
-        <script>
-
-        const dishes = {dishes};
-        const categories = {categories};
-
-        const menu = document.getElementById("menu");
-
-        let html = "";
-
-        categories.forEach(c => {{
-
-            html += `<h2>${{c.name}}</h2>`;
-
-            dishes
-                .filter(d => d.category_id === c.id)
-                .forEach(d => {{
-
-                    html += `
-                        <div class="card">
-                            <img src="${{d.image}}">
-                            <div class="content">
-                                <h3>${{d.name}}</h3>
-                                <p>${{d.description}}</p>
-                                <b>${{d.price}}€</b>
-                            </div>
-                        </div>
-                    `;
-                }});
-        }});
-
-        menu.innerHTML = html;
-
-        </script>
-
-    </body>
-    </html>
-    """
