@@ -239,3 +239,4 @@ def menu(
 
     finally:
         db.close()
+        # force rebuild
