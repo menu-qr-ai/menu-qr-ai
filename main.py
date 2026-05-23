@@ -139,7 +139,6 @@ def generate_qr(
         f"https://menu-qr-ai-1.onrender.com/"
         f"menu?restaurant_id={restaurant_id}"
         f"&table={table_id}"
-        f"&lang=es"
     )
 
     img = qrcode.make(url)
@@ -163,8 +162,34 @@ def menu(
     request: Request,
     restaurant_id: int = 1,
     table: int = 0,
-    lang: str = "es"
+    lang: str | None = None
 ):
+
+    # -------------------------
+    # AUTO LANGUAGE DETECTION
+    # -------------------------
+
+    if lang is None:
+
+        browser_lang = request.headers.get(
+            "accept-language",
+            "es"
+        ).lower()
+
+        if browser_lang.startswith("en"):
+            lang = "en"
+
+        elif browser_lang.startswith("fr"):
+            lang = "fr"
+
+        elif browser_lang.startswith("de"):
+            lang = "de"
+
+        elif browser_lang.startswith("it"):
+            lang = "it"
+
+        else:
+            lang = "es"
 
     db = SessionLocal()
 
