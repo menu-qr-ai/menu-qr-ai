@@ -1,10 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
 
 import os
 import io
@@ -61,6 +59,7 @@ Base.metadata.create_all(bind=engine)
 def root():
     return RedirectResponse(url="/menu")
 
+
 # -------------------------
 # SEED DATA
 # -------------------------
@@ -73,23 +72,13 @@ def seed_data():
         if db.query(Restaurant).first():
             return
 
-        restaurant = Restaurant(
-            name="Demo Restaurant"
-        )
-
+        restaurant = Restaurant(name="Demo Restaurant")
         db.add(restaurant)
         db.commit()
         db.refresh(restaurant)
 
-        pizzas = Category(
-            name="Pizzas",
-            restaurant_id=restaurant.id
-        )
-
-        postres = Category(
-            name="Postres",
-            restaurant_id=restaurant.id
-        )
+        pizzas = Category(name="Pizzas", restaurant_id=restaurant.id)
+        postres = Category(name="Postres", restaurant_id=restaurant.id)
 
         db.add_all([pizzas, postres])
         db.commit()
@@ -101,7 +90,7 @@ def seed_data():
             allergens="gluten, lactosa",
             ingredients="tomate, mozzarella, albahaca",
             image="https://images.unsplash.com/photo-1513104890138-7c749659a591",
-            category_id=1,
+            category_id=pizzas.id,
             restaurant_id=restaurant.id
         )
 
@@ -112,7 +101,7 @@ def seed_data():
             allergens="gluten, lactosa",
             ingredients="mascarpone, cacao, café",
             image="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9",
-            category_id=2,
+            category_id=postres.id,
             restaurant_id=restaurant.id
         )
 
@@ -122,37 +111,33 @@ def seed_data():
     finally:
         db.close()
 
+
 @app.on_event("startup")
 def startup():
     seed_data()
+
 
 # -------------------------
 # QR
 # -------------------------
 @app.get("/qr/{restaurant_id}/{table_id}")
-def generate_qr(
-    restaurant_id: int,
-    table_id: int
-):
+def generate_qr(restaurant_id: int, table_id: int):
 
     url = (
         f"https://menu-qr-ai-1.onrender.com/"
         f"menu?restaurant_id={restaurant_id}"
         f"&table={table_id}"
+        f"&lang=es"
     )
 
     img = qrcode.make(url)
 
     buffer = io.BytesIO()
-
     img.save(buffer)
-
     buffer.seek(0)
 
-    return StreamingResponse(
-        buffer,
-        media_type="image/png"
-    )
+    return StreamingResponse(buffer, media_type="image/png")
+
 
 # -------------------------
 # MENU
@@ -165,29 +150,19 @@ def menu(
     lang: str | None = None
 ):
 
-    # -------------------------
     # AUTO LANGUAGE DETECTION
-    # -------------------------
-
     if lang is None:
 
-        browser_lang = request.headers.get(
-            "accept-language",
-            "es"
-        ).lower()
+        browser_lang = request.headers.get("accept-language", "es").lower()
 
         if browser_lang.startswith("en"):
             lang = "en"
-
         elif browser_lang.startswith("fr"):
             lang = "fr"
-
         elif browser_lang.startswith("de"):
             lang = "de"
-
         elif browser_lang.startswith("it"):
             lang = "it"
-
         else:
             lang = "es"
 
@@ -204,10 +179,7 @@ def menu(
         ).all()
 
         categories_json = json.dumps([
-            {
-                "id": c.id,
-                "name": c.name
-            }
+            {"id": c.id, "name": c.name}
             for c in categories
         ])
 
@@ -239,4 +211,62 @@ def menu(
 
     finally:
         db.close()
-        # force rebuild
+
+
+# -------------------------
+# AI TRANSLATE DISH
+# -------------------------
+@app.get("/ai/translate-dish/{dish_id}")
+def translate_dish(dish_id: int, lang: str = "en"):
+
+    if client is None:
+        return {"error": "OPENAI_API_KEY not configured"}
+
+    db = SessionLocal()
+
+    try:
+
+        dish = db.query(Dish).filter(Dish.id == dish_id).first()
+
+        if not dish:
+            return {"error": "Dish not found"}
+
+        prompt = f"""
+        Translate this restaurant menu item into {lang}.
+
+        Return ONLY valid JSON.
+
+        Dish:
+        Name: {dish.name}
+        Description: {dish.description}
+        Ingredients: {dish.ingredients}
+        Allergens: {dish.allergens}
+
+        {{
+            "name": "...",
+            "description": "...",
+            "ingredients": "...",
+            "allergens": "..."
+        }}
+        """
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a restaurant translator."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        content = response.choices[0].message.content
+
+        try:
+            return json.loads(content)
+        except:
+            return {
+                "error": "Invalid JSON from model",
+                "raw": content
+            }
+
+    finally:
+        db.close()
