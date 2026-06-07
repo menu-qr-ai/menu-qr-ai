@@ -1,130 +1,68 @@
 <!DOCTYPE html>
-<html lang="{{ lang }}">
-
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Menu</title>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .dish { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; }
+        .dish img { width: 120px; border-radius: 8px; }
+        .btn { margin-top: 8px; padding: 6px 10px; background: #111; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        .small { font-size: 12px; color: #666; }
+    </style>
 </head>
 
 <body>
 
-<header>
-    <h1>🍽️ Restaurante Inteligente</h1>
-
-    <div class="meta">
-        Restaurante: {{ restaurant_id }} |
-        Mesa: {{ table }} |
-        Idioma: {{ lang }}
-    </div>
-</header>
+<h1>🍽️ Menu</h1>
 
 <div id="menu"></div>
 
 <script>
+    const dishes = {{ dishes | tojson }};
+    
+    function render() {
+        const container = document.getElementById("menu");
+        container.innerHTML = "";
 
-const dishes = {{ dishes | safe }};
-const categories = {{ categories | safe }};
-const lang = "{{ lang }}";
-
-const menu = document.getElementById("menu");
-
-let html = "";
-
-/* -------------------------
-   RENDER BASE MENU
-------------------------- */
-categories.forEach(c => {
-
-    html += `<h2>${c.name}</h2>`;
-
-    dishes
-        .filter(d => d.category_id === c.id)
-        .forEach(d => {
-
-            html += `
-                <div class="card">
-
+        dishes.forEach(d => {
+            container.innerHTML += `
+                <div class="dish">
+                    <h3>${d.name}</h3>
                     <img src="${d.image}">
+                    <p>${d.description}</p>
 
-                    <div class="content">
+                    <p class="small" id="text-${d.id}">
+                        ${d.ingredients} | ${d.allergens}
+                    </p>
 
-                        <h3 id="name-${d.id}">
-                            ${d.name}
-                        </h3>
-
-                        <p id="desc-${d.id}">
-                            ${d.description}
-                        </p>
-
-                        <p>
-                            <b>Ingredientes:</b>
-                            <span id="ing-${d.id}">
-                                ${d.ingredients || "No disponibles"}
-                            </span>
-                        </p>
-
-                        <p>
-                            <b>Alérgenos:</b>
-                            <span id="all-${d.id}">
-                                ${d.allergens || "No especificados"}
-                            </span>
-                        </p>
-
-                        <b>${d.price}€</b>
-
-                    </div>
+                    <button class="btn" onclick="translateDish(${d.id})">
+                        🌍 Traducir
+                    </button>
                 </div>
             `;
         });
-});
+    }
 
-menu.innerHTML = html;
+    async function translateDish(id) {
+        const lang = navigator.language || "en";
 
-/* -------------------------
-   IA TRANSLATION LAYER
-------------------------- */
-async function translateDish(dishId) {
-
-    try {
-
-        const res = await fetch(
-            `/ai/translate-dish/${dishId}?lang=${lang}`
-        );
-
+        const res = await fetch(`/ai/translate-dish/${id}?lang=${lang}`);
         const data = await res.json();
 
-        if (data.error) return;
+        if (data.error) {
+            alert("Error traduciendo");
+            return;
+        }
 
-        const nameEl = document.getElementById(`name-${dishId}`);
-        const descEl = document.getElementById(`desc-${dishId}`);
-        const ingEl = document.getElementById(`ing-${dishId}`);
-        const allEl = document.getElementById(`all-${dishId}`);
-
-        if (nameEl) nameEl.innerText = data.name || nameEl.innerText;
-        if (descEl) descEl.innerText = data.description || descEl.innerText;
-        if (ingEl) ingEl.innerText = data.ingredients || ingEl.innerText;
-        if (allEl) allEl.innerText = data.allergens || allEl.innerText;
-
-    } catch (err) {
-        console.log("Translation error:", err);
+        document.getElementById("text-" + id).innerHTML =
+            `${data.ingredients} | ${data.allergens}
+            <br><strong>${data.description}</strong>`;
     }
-}
 
-/* -------------------------
-   AUTO TRANSLATE (IF NEEDED)
-------------------------- */
-if (lang !== "es") {
-
-    dishes.forEach(d => {
-        translateDish(d.id);
-    });
-
-}
-
+    render();
 </script>
 
 </body>
