@@ -73,12 +73,20 @@ def seed_data():
             return
 
         restaurant = Restaurant(name="Demo Restaurant")
+
         db.add(restaurant)
         db.commit()
         db.refresh(restaurant)
 
-        pizzas = Category(name="Pizzas", restaurant_id=restaurant.id)
-        postres = Category(name="Postres", restaurant_id=restaurant.id)
+        pizzas = Category(
+            name="Pizzas",
+            restaurant_id=restaurant.id
+        )
+
+        postres = Category(
+            name="Postres",
+            restaurant_id=restaurant.id
+        )
 
         db.add_all([pizzas, postres])
         db.commit()
@@ -121,7 +129,10 @@ def startup():
 # QR
 # -------------------------
 @app.get("/qr/{restaurant_id}/{table_id}")
-def generate_qr(restaurant_id: int, table_id: int):
+def generate_qr(
+    restaurant_id: int,
+    table_id: int
+):
 
     url = (
         f"https://menu-qr-ai-1.onrender.com/"
@@ -133,10 +144,15 @@ def generate_qr(restaurant_id: int, table_id: int):
     img = qrcode.make(url)
 
     buffer = io.BytesIO()
+
     img.save(buffer)
+
     buffer.seek(0)
 
-    return StreamingResponse(buffer, media_type="image/png")
+    return StreamingResponse(
+        buffer,
+        media_type="image/png"
+    )
 
 
 # -------------------------
@@ -153,16 +169,23 @@ def menu(
     # AUTO LANGUAGE DETECTION
     if lang is None:
 
-        browser_lang = request.headers.get("accept-language", "es").lower()
+        browser_lang = request.headers.get(
+            "accept-language",
+            "es"
+        ).lower()
 
         if browser_lang.startswith("en"):
             lang = "en"
+
         elif browser_lang.startswith("fr"):
             lang = "fr"
+
         elif browser_lang.startswith("de"):
             lang = "de"
+
         elif browser_lang.startswith("it"):
             lang = "it"
+
         else:
             lang = "es"
 
@@ -179,7 +202,10 @@ def menu(
         ).all()
 
         categories_json = json.dumps([
-            {"id": c.id, "name": c.name}
+            {
+                "id": c.id,
+                "name": c.name
+            }
             for c in categories
         ])
 
@@ -198,9 +224,9 @@ def menu(
         ])
 
         return templates.TemplateResponse(
+            request,
             "menu.html",
             {
-                "request": request,
                 "restaurant_id": restaurant_id,
                 "table": table,
                 "lang": lang,
@@ -217,19 +243,28 @@ def menu(
 # AI TRANSLATE DISH
 # -------------------------
 @app.get("/ai/translate-dish/{dish_id}")
-def translate_dish(dish_id: int, lang: str = "en"):
+def translate_dish(
+    dish_id: int,
+    lang: str = "en"
+):
 
     if client is None:
-        return {"error": "OPENAI_API_KEY not configured"}
+        return {
+            "error": "OPENAI_API_KEY not configured"
+        }
 
     db = SessionLocal()
 
     try:
 
-        dish = db.query(Dish).filter(Dish.id == dish_id).first()
+        dish = db.query(Dish).filter(
+            Dish.id == dish_id
+        ).first()
 
         if not dish:
-            return {"error": "Dish not found"}
+            return {
+                "error": "Dish not found"
+            }
 
         prompt = f"""
         Translate this restaurant menu item into {lang}.
@@ -253,8 +288,14 @@ def translate_dish(dish_id: int, lang: str = "en"):
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a restaurant translator."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a restaurant translator."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ]
         )
 
@@ -262,6 +303,7 @@ def translate_dish(dish_id: int, lang: str = "en"):
 
         try:
             return json.loads(content)
+
         except:
             return {
                 "error": "Invalid JSON from model",
@@ -270,6 +312,11 @@ def translate_dish(dish_id: int, lang: str = "en"):
 
     finally:
         db.close()
-        @app.get("/test")
+
+
+# -------------------------
+# TEST
+# -------------------------
+@app.get("/test")
 def test():
     return {"ok": True}
