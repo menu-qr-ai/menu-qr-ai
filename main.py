@@ -270,3 +270,6 @@ def translate_dish(dish_id: int, lang: str = "en"):
 
     finally:
         db.close()
+        @app.get("/test")
+def test():
+    return {"ok": True}
