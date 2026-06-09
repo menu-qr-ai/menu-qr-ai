@@ -1,170 +1,72 @@
-```javascript id="x4n32s"
-const categoriesContainer =
-    document.getElementById("categories")
-
-const dishesContainer =
-    document.getElementById("dishes")
-
+const categoriesContainer = document.getElementById("categories")
+const dishesContainer = document.getElementById("dishes")
 
 function renderCategories() {
 
-    categoriesContainer.innerHTML = ""
+```
+categoriesContainer.innerHTML = ""
 
-    const allButton =
-        document.createElement("button")
+categories.forEach(category => {
 
-    allButton.innerText = "All"
+    const button = document.createElement("button")
 
-    allButton.className =
-        "category-button"
+    button.className = "category-button"
 
-    allButton.onclick = () => {
-        renderDishes()
+    button.innerText = category.name
+
+    button.onclick = () => {
+        renderDishes(category.id)
     }
 
-    categoriesContainer.appendChild(
-        allButton
-    )
-
-    categories.forEach(category => {
-
-        const button =
-            document.createElement("button")
-
-        button.innerText =
-            category.name
-
-        button.className =
-            "category-button"
-
-        button.onclick = () => {
-            renderDishes(category.id)
-        }
-
-        categoriesContainer.appendChild(
-            button
-        )
-
-    })
+    categoriesContainer.appendChild(button)
+})
+```
 
 }
-
 
 function renderDishes(categoryId = null) {
 
-    dishesContainer.innerHTML = ""
+```
+dishesContainer.innerHTML = ""
 
-    let filteredDishes = dishes
+let filteredDishes = dishes
 
-    if (categoryId !== null) {
+if (categoryId !== null) {
 
-        filteredDishes =
-            dishes.filter(dish =>
-                dish.category_id === categoryId
-            )
-
-    }
-
-    filteredDishes.forEach(dish => {
-
-        const card =
-            document.createElement("div")
-
-        card.className =
-            "dish-card"
-
-        card.innerHTML = `
-            <img
-                src="${dish.image}"
-                class="dish-image"
-            >
-
-            <div class="dish-content">
-
-                <h2 class="dish-title">
-                    ${dish.name}
-                </h2>
-
-                <p class="dish-description">
-                    ${dish.description}
-                </p>
-
-                <div class="dish-price">
-                    €${dish.price}
-                </div>
-
-                <div class="dish-meta">
-                    <strong>Ingredients:</strong>
-                    ${dish.ingredients}
-                </div>
-
-                <div class="dish-meta">
-                    <strong>Allergens:</strong>
-                    ${dish.allergens}
-                </div>
-
-                <button
-                    class="translate-button"
-                    onclick="translateDish(${dish.id})"
-                >
-                    Translate with AI
-                </button>
-
-            </div>
-        `
-
-        dishesContainer.appendChild(card)
-
+    filteredDishes = dishes.filter(dish => {
+        return dish.category_id === categoryId
     })
-
 }
 
+filteredDishes.forEach(dish => {
 
-async function translateDish(dishId) {
+    const card = document.createElement("div")
 
-    const lang =
-        prompt("Language? Example: en, fr, de")
+    card.className = "dish-card"
 
-    if (!lang) {
-        return
-    }
+    card.innerHTML = `
+        <img src="${dish.image}" class="dish-image">
 
-    try {
+        <div class="dish-content">
 
-        const response = await fetch(
-            `/ai/translate-dish/${dishId}?lang=${lang}`
-        )
+            <h2>${dish.name}</h2>
 
-        const data = await response.json()
+            <p>${dish.description}</p>
 
-        if (data.error) {
+            <p><strong>Ingredients:</strong> ${dish.ingredients}</p>
 
-            alert(data.error)
+            <p><strong>Allergens:</strong> ${dish.allergens}</p>
 
-            return
+            <p class="price">${dish.price} €</p>
 
-        }
+        </div>
+    `
 
-        alert(
-            `Translated:\n\n` +
-            `${data.name}\n\n` +
-            `${data.description}`
-        )
-
-    }
-
-    catch (error) {
-
-        console.error(error)
-
-        alert("Translation error")
-
-    }
+    dishesContainer.appendChild(card)
+})
+```
 
 }
-
 
 renderCategories()
-
 renderDishes()
-```
