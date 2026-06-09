@@ -1,10 +1,8 @@
-﻿```text
-fastapi
+﻿fastapi
 uvicorn
 jinja2
 sqlalchemy
-python-multipart
-openai
 qrcode
 pillow
-```
+openai
+python-multipart
