@@ -1,62 +1,62 @@
-```html id="u4c0mh"
 <!DOCTYPE html>
-<html lang="en">
+
+<html lang="es">
 
 <head>
 
-    <meta charset="UTF-8">
+```
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>Menu QR AI</title>
+<title>Menu QR AI</title>
 
-    <link
-        rel="stylesheet"
-        href="/static/style.css"
-    >
+<link
+    rel="stylesheet"
+    href="/static/style.css"
+>
+```
 
 </head>
 
 <body>
 
-    <header class="header">
+```
+<header class="header">
 
-        <h1>🍽 Menu QR AI</h1>
+    <h1>🍽 Menu QR AI</h1>
 
-        <p>
-            Smart restaurant menu with AI translation
-        </p>
+    <p>
+        Smart restaurant menu with AI translation
+    </p>
 
-    </header>
+</header>
 
+<main class="container">
 
-    <main class="container">
+    <div id="categories"></div>
 
-        <div id="categories"></div>
+    <div id="dishes"></div>
 
-        <div id="dishes"></div>
+</main>
 
-    </main>
+<script>
 
+    const categories = {{ categories | safe }}
 
-    <script>
+    const dishes = {{ dishes | safe }}
 
-        const categories = JSON.parse(
-            '{{ categories | safe }}'
-        )
+    console.log(categories)
+    console.log(dishes)
 
-        const dishes = JSON.parse(
-            '{{ dishes | safe }}'
-        )
+</script>
 
-    </script>
-
-    <script src="/static/app.js"></script>
+<script src="/static/app.js"></script>
+```
 
 </body>
 
 </html>
-```
