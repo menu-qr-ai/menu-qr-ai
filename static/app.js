@@ -3,70 +3,103 @@ const dishesContainer = document.getElementById("dishes")
 
 function renderCategories() {
 
-```
-categoriesContainer.innerHTML = ""
+    categoriesContainer.innerHTML = ""
 
-categories.forEach(category => {
+    categories.forEach(category => {
 
-    const button = document.createElement("button")
+        const button = document.createElement("button")
 
-    button.className = "category-button"
+        button.className = "category-button"
 
-    button.innerText = category.name
+        button.innerText = category.name
 
-    button.onclick = () => {
-        renderDishes(category.id)
-    }
+        button.onclick = () => {
+            renderDishes(category.id)
+        }
 
-    categoriesContainer.appendChild(button)
-})
-```
-
-}
-
-function renderDishes(categoryId = null) {
-
-```
-dishesContainer.innerHTML = ""
-
-let filteredDishes = dishes
-
-if (categoryId !== null) {
-
-    filteredDishes = dishes.filter(dish => {
-        return dish.category_id === categoryId
+        categoriesContainer.appendChild(button)
     })
 }
 
-filteredDishes.forEach(dish => {
+function renderDishes(categoryId) {
 
-    const card = document.createElement("div")
+    dishesContainer.innerHTML = ""
 
-    card.className = "dish-card"
+    const filtered = dishes.filter(
+        dish => dish.category_id === categoryId
+    )
 
-    card.innerHTML = `
-        <img src="${dish.image}" class="dish-image">
+    filtered.forEach(dish => {
 
-        <div class="dish-content">
+        const card = document.createElement("div")
 
-            <h2>${dish.name}</h2>
+        card.className = "dish-card"
 
-            <p>${dish.description}</p>
+        card.innerHTML = `
+            <img
+                src="${dish.image}"
+                class="dish-image"
+            >
 
-            <p><strong>Ingredients:</strong> ${dish.ingredients}</p>
+            <div class="dish-content">
 
-            <p><strong>Allergens:</strong> ${dish.allergens}</p>
+                <h2>${dish.name}</h2>
 
-            <p class="price">${dish.price} €</p>
+                <p>${dish.description}</p>
 
-        </div>
-    `
+                <p>
+                    <strong>Ingredients:</strong>
+                    ${dish.ingredients}
+                </p>
 
-    dishesContainer.appendChild(card)
-})
-```
+                <p>
+                    <strong>Allergens:</strong>
+                    ${dish.allergens}
+                </p>
 
+                <div class="dish-footer">
+
+                    <span class="price">
+                        €${dish.price}
+                    </span>
+
+                    <button
+                        class="translate-button"
+                        onclick="translateDish(${dish.id})"
+                    >
+                        Translate
+                    </button>
+
+                </div>
+
+            </div>
+        `
+
+        dishesContainer.appendChild(card)
+    })
+}
+
+async function translateDish(dishId) {
+
+    const lang = prompt(
+        "Language? (en, fr, de, it)"
+    )
+
+    if (!lang) return
+
+    const response = await fetch(
+        `/ai/translate-dish/${dishId}?lang=${lang}`
+    )
+
+    const data = await response.json()
+
+    alert(
+        `${data.name}\n\n${data.description}`
+    )
 }
 
 renderCategories()
-renderDishes()
+
+if (categories.length > 0) {
+    renderDishes(categories[0].id)
+}
