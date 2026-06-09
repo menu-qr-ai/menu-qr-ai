@@ -1,48 +1,118 @@
-body {
+```css id="wmp5tb"
+* {
     margin: 0;
-    font-family: system-ui;
-    background: #0e0f12;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #111827;
     color: white;
+    font-family: Arial, sans-serif;
 }
 
-header {
+.header {
     text-align: center;
-    padding: 30px;
+    padding: 40px 20px;
 }
 
-.meta {
-    opacity: 0.7;
-    font-size: 14px;
+.header h1 {
+    font-size: 42px;
+    margin-bottom: 10px;
 }
 
-#menu {
-    max-width: 700px;
+.header p {
+    color: #9ca3af;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
     margin: auto;
-    padding: 20px;
 }
 
-.card {
-    background: #171922;
-    margin-bottom: 16px;
-    border-radius: 16px;
+#categories {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.category-button {
+    background: #2563eb;
+    border: none;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.category-button:hover {
+    background: #1d4ed8;
+}
+
+#dishes {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(300px, 1fr)
+    );
+    gap: 25px;
+}
+
+.dish-card {
+    background: #1f2937;
+    border-radius: 18px;
     overflow: hidden;
-    border: 1px solid #2a2d39;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
 
-.card img {
+.dish-image {
     width: 100%;
     height: 220px;
     object-fit: cover;
 }
 
-.content {
-    padding: 16px;
+.dish-content {
+    padding: 20px;
 }
 
-h2 {
-    margin-top: 40px;
+.dish-title {
+    font-size: 24px;
+    margin-bottom: 10px;
 }
 
-p {
-    color: #b8bcc8;
+.dish-description {
+    color: #d1d5db;
+    margin-bottom: 15px;
 }
+
+.dish-price {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.dish-meta {
+    margin-bottom: 10px;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.translate-button {
+    width: 100%;
+    border: none;
+    background: #10b981;
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: 0.2s;
+}
+
+.translate-button:hover {
+    background: #059669;
+}
+```

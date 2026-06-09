@@ -1,69 +1,62 @@
+```html id="u4c0mh"
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Menu</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en">
 
-    <style>
-        body { font-family: Arial; margin: 20px; }
-        .dish { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; }
-        .dish img { width: 120px; border-radius: 8px; }
-        .btn { margin-top: 8px; padding: 6px 10px; background: #111; color: white; border: none; border-radius: 6px; cursor: pointer; }
-        .small { font-size: 12px; color: #666; }
-    </style>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Menu QR AI</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
 </head>
 
 <body>
 
-<h1>🍽️ Menu</h1>
+    <header class="header">
 
-<div id="menu"></div>
+        <h1>🍽 Menu QR AI</h1>
 
-<script>
-    const dishes = {{ dishes | tojson }};
-    
-    function render() {
-        const container = document.getElementById("menu");
-        container.innerHTML = "";
+        <p>
+            Smart restaurant menu with AI translation
+        </p>
 
-        dishes.forEach(d => {
-            container.innerHTML += `
-                <div class="dish">
-                    <h3>${d.name}</h3>
-                    <img src="${d.image}">
-                    <p>${d.description}</p>
+    </header>
 
-                    <p class="small" id="text-${d.id}">
-                        ${d.ingredients} | ${d.allergens}
-                    </p>
 
-                    <button class="btn" onclick="translateDish(${d.id})">
-                        🌍 Traducir
-                    </button>
-                </div>
-            `;
-        });
-    }
+    <main class="container">
 
-    async function translateDish(id) {
-        const lang = navigator.language || "en";
+        <div id="categories"></div>
 
-        const res = await fetch(`/ai/translate-dish/${id}?lang=${lang}`);
-        const data = await res.json();
+        <div id="dishes"></div>
 
-        if (data.error) {
-            alert("Error traduciendo");
-            return;
-        }
+    </main>
 
-        document.getElementById("text-" + id).innerHTML =
-            `${data.ingredients} | ${data.allergens}
-            <br><strong>${data.description}</strong>`;
-    }
 
-    render();
-</script>
+    <script>
+
+        const categories = JSON.parse(
+            '{{ categories | safe }}'
+        )
+
+        const dishes = JSON.parse(
+            '{{ dishes | safe }}'
+        )
+
+    </script>
+
+    <script src="/static/app.js"></script>
 
 </body>
+
 </html>
+```
