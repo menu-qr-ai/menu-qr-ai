@@ -9,6 +9,9 @@ class DashboardSummary(ORMModel):
     total_searches: int = 0
     total_language_changes: int = 0
     total_translation_requests: int = 0
+    dish_view_menu_view_ratio: float = 0
+    top_dish_name: str | None = None
+    top_dish_views: int = 0
 
 
 class TopDishMetric(ORMModel):
@@ -25,6 +28,15 @@ class SearchMetric(ORMModel):
 class LanguageMetric(ORMModel):
     language: str
     count: int
+    percentage: float = 0
+
+
+class DailyEventMetric(ORMModel):
+    date: str
+    menu_views: int = 0
+    searches: int = 0
+    translation_requests: int = 0
+    total_events: int = 0
 
 
 class RecentEvent(ORMModel):
@@ -45,9 +57,11 @@ class DashboardInsight(ORMModel):
 
 class DashboardResponse(ORMModel):
     restaurant_id: int | None = None
+    range: str = "30d"
     summary: DashboardSummary
     top_dishes: list[TopDishMetric]
     top_searches: list[SearchMetric]
     languages: list[LanguageMetric]
+    events_by_day: list[DailyEventMetric]
     recent_events: list[RecentEvent]
     insights: list[DashboardInsight]

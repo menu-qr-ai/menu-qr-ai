@@ -8,7 +8,7 @@
     --dash-accent: #2563eb;
     --dash-accent-soft: #e8f0ff;
     --dash-success: #0f766e;
-    --dash-warning: #b45309;
+    --dash-danger: #be123c;
     --dash-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
     --dash-radius: 8px;
 }
@@ -25,18 +25,22 @@
 }
 
 .dashboard-header,
+.dashboard-toolbar,
 .panel-heading,
 .metric-row,
 .event-row,
-.dashboard-actions {
+.dashboard-actions,
+.range-control,
+.metric-side {
     display: flex;
     align-items: flex-start;
 }
 
-.dashboard-header {
+.dashboard-header,
+.dashboard-toolbar {
     justify-content: space-between;
     gap: 24px;
-    margin-bottom: 28px;
+    margin-bottom: 22px;
 }
 
 .dashboard-eyebrow {
@@ -60,20 +64,23 @@
 }
 
 .dashboard-subtitle {
-    max-width: 620px;
+    max-width: 640px;
     margin: 14px 0 0;
     color: var(--dash-muted);
     font-size: 17px;
     line-height: 1.6;
 }
 
-.dashboard-actions {
+.dashboard-actions,
+.range-control {
     gap: 10px;
     flex-wrap: wrap;
     justify-content: flex-end;
 }
 
-.dashboard-actions a {
+.dashboard-actions a,
+.icon-button,
+.range-control button {
     min-height: 38px;
     display: inline-flex;
     align-items: center;
@@ -82,7 +89,47 @@
     border-radius: var(--dash-radius);
     background: var(--dash-surface);
     color: var(--dash-muted);
+    cursor: pointer;
+    font: inherit;
     font-weight: 800;
+    transition: border-color 160ms ease, color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.icon-button {
+    width: 38px;
+    justify-content: center;
+    padding: 0;
+}
+
+.dashboard-actions a:hover,
+.icon-button:hover,
+.range-control button:hover,
+.range-control button.active {
+    border-color: rgba(37, 99, 235, 0.38);
+    background: var(--dash-accent-soft);
+    color: var(--dash-accent);
+    transform: translateY(-1px);
+}
+
+.icon-button:disabled {
+    cursor: wait;
+    opacity: 0.58;
+    transform: none;
+}
+
+.dashboard-badge,
+.metric-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    border-radius: var(--dash-radius);
+    background: var(--dash-accent-soft);
+    color: var(--dash-accent);
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
 }
 
 .kpi-grid,
@@ -92,7 +139,7 @@
 }
 
 .kpi-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     margin-bottom: 18px;
 }
 
@@ -110,6 +157,12 @@
     gap: 12px;
     min-height: 118px;
     padding: 20px;
+    transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.kpi-card:hover {
+    border-color: rgba(37, 99, 235, 0.22);
+    transform: translateY(-1px);
 }
 
 .kpi-card span,
@@ -120,8 +173,9 @@
 }
 
 .kpi-card strong {
-    font-size: 34px;
-    line-height: 1;
+    overflow-wrap: anywhere;
+    font-size: clamp(22px, 2.7vw, 34px);
+    line-height: 1.05;
 }
 
 .dashboard-state {
@@ -136,8 +190,18 @@
     display: block;
 }
 
+.dashboard-state[data-tone="error"] {
+    border-color: rgba(190, 18, 60, 0.24);
+    color: var(--dash-danger);
+}
+
 .dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 16px;
+}
+
+.chart-grid .dashboard-panel {
+    min-height: 330px;
 }
 
 .dashboard-panel {
@@ -177,6 +241,12 @@
     padding: 13px 14px;
 }
 
+.metric-side {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .metric-label,
 .event-meta {
     font-size: 13px;
@@ -198,11 +268,39 @@
 }
 
 .chart-placeholder {
-    min-height: 78px;
+    display: grid;
+    gap: 10px;
+    min-height: 210px;
     margin-top: 16px;
+    padding: 14px;
     border: 1px dashed var(--dash-line);
     border-radius: var(--dash-radius);
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(15, 118, 110, 0.06));
+    align-content: end;
+}
+
+.chart-placeholder.compact {
+    min-height: 120px;
+}
+
+.chart-bar {
+    display: grid;
+    grid-template-columns: minmax(70px, 0.7fr) minmax(70px, 2fr) auto;
+    align-items: center;
+    gap: 10px;
+    color: var(--dash-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.chart-bar i {
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--dash-accent), var(--dash-success));
+}
+
+.chart-bar strong {
+    color: var(--dash-text);
 }
 
 .insights-panel {
@@ -212,6 +310,11 @@
 
 .insight-card {
     padding: 16px;
+    transition: transform 160ms ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-1px);
 }
 
 .insight-card strong {
@@ -241,6 +344,30 @@
     font-weight: 800;
 }
 
+.is-loading .kpi-card,
+.is-loading .dashboard-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.is-loading .kpi-card::after,
+.is-loading .dashboard-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent);
+    animation: shimmer 1100ms ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     :root {
         --dash-bg: #0b0f17;
@@ -252,12 +379,22 @@
         --dash-accent-soft: #15213a;
         --dash-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
     }
+
+    .is-loading .kpi-card::after,
+    .is-loading .dashboard-panel::after {
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    }
+}
+
+@media (max-width: 1120px) {
+    .kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 980px) {
-    .kpi-grid,
     .dashboard-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 }
 
@@ -268,13 +405,17 @@
     }
 
     .dashboard-header,
+    .dashboard-toolbar,
     .dashboard-actions {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .kpi-grid,
-    .dashboard-grid {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-bar {
         grid-template-columns: 1fr;
     }
 }

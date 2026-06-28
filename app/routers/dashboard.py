@@ -13,18 +13,20 @@ router = APIRouter(tags=["Dashboard"])
 @router.get("/api/dashboard/summary", response_model=DashboardResponse)
 def dashboard_summary(
     restaurant_id: int | None = None,
+    range: str | None = None,
     db: Session = Depends(get_db),
 ):
-    return get_dashboard_summary(db, restaurant_id=restaurant_id)
+    return get_dashboard_summary(db, restaurant_id=restaurant_id, range_value=range)
 
 
 @router.get("/admin/dashboard")
 def dashboard_page(
     request: Request,
     restaurant_id: int | None = None,
+    range: str | None = None,
 ):
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context={"restaurant_id": restaurant_id},
+        context={"restaurant_id": restaurant_id, "range": range or "30d"},
     )

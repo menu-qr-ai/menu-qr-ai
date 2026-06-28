@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, delete
@@ -251,10 +252,13 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(payload["summary"]["total_searches"], 1)
         self.assertEqual(payload["summary"]["total_language_changes"], 1)
         self.assertEqual(payload["summary"]["total_translation_requests"], 1)
+        self.assertEqual(payload["summary"]["dish_view_menu_view_ratio"], 2)
+        self.assertEqual(payload["summary"]["top_dish_name"], "Pizza Margarita")
         self.assertEqual(payload["top_dishes"][0]["name"], "Pizza Margarita")
         self.assertEqual(payload["top_dishes"][0]["views"], 2)
         self.assertEqual(payload["top_searches"][0], {"query": "pizza", "count": 1})
-        self.assertEqual(payload["languages"][0], {"language": "en", "count": 2})
+        self.assertEqual(payload["languages"][0], {"language": "en", "count": 2, "percentage": 100.0})
+        self.assertGreaterEqual(len(payload["events_by_day"]), 1)
 
     def test_dashboard_summary_filters_by_restaurant_id(self):
         with self.SessionTesting() as db:
@@ -274,6 +278,132 @@ class AppSmokeTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["restaurant_id"], 2)
         self.assertEqual(payload["summary"]["total_menu_views"], 2)
+
+    def test_dashboard_range_today_filters_events(self):
+        old_date = datetime.utcnow() - timedelta(days=2)
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view", created_at=old_date),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=today")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["range"], "today")
+        self.assertEqual(payload["summary"]["total_menu_views"], 1)
+
+    def test_dashboard_range_7d_filters_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="search"),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="search",
+                        created_at=datetime.utcnow() - timedelta(days=8),
+                    ),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=7d")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["summary"]["total_searches"], 1)
+
+    def test_dashboard_range_30d_filters_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="translation_request"),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="translation_request",
+                        created_at=datetime.utcnow() - timedelta(days=31),
+                    ),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=30d")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["summary"]["total_translation_requests"], 1)
+
+    def test_dashboard_range_90d_filters_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="menu_view",
+                        created_at=datetime.utcnow() - timedelta(days=91),
+                    ),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=90d")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["summary"]["total_menu_views"], 1)
+
+    def test_dashboard_range_all_includes_all_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="menu_view",
+                        created_at=datetime.utcnow() - timedelta(days=120),
+                    ),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=all")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["range"], "all")
+        self.assertEqual(payload["summary"]["total_menu_views"], 2)
+
+    def test_dashboard_insights_are_generated_from_real_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=1, event_type="dish_view", dish_id=1),
+                    AnalyticsEvent(restaurant_id=1, event_type="language_change", language="en"),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="search",
+                        metadata_json=json.dumps({"search_query": "tiramisu"}),
+                    ),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?range=all")
+
+        self.assertEqual(response.status_code, 200)
+        insight_titles = [insight["title"] for insight in response.json()["insights"]]
+        self.assertIn("Hay pocas visualizaciones de la carta", insight_titles)
+        self.assertTrue(any("idioma" in title.lower() or "eventos con idioma" in title.lower() for title in insight_titles))
 
     def test_dashboard_page_renders_shell(self):
         with TestClient(app) as client:

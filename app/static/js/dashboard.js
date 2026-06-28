@@ -1,21 +1,42 @@
 const dashboardRoot = document.querySelector(".dashboard-shell");
 const dashboardState = document.getElementById("dashboardState");
+const dashboardMeta = document.getElementById("dashboardMeta");
+const refreshButton = document.getElementById("refreshDashboard");
+const rangeButtons = Array.from(document.querySelectorAll("[data-range-option]"));
+
+let activeRange = dashboardRoot?.dataset.range || "30d";
 
 function numberFormat(value) {
     return new Intl.NumberFormat("es-ES").format(Number(value || 0));
 }
 
-function showState(message, visible = true) {
+function showState(message, visible = true, tone = "neutral") {
     dashboardState.textContent = message;
+    dashboardState.dataset.tone = tone;
     dashboardState.classList.toggle("is-visible", visible);
+}
+
+function setLoading(isLoading) {
+    dashboardRoot.classList.toggle("is-loading", isLoading);
+    refreshButton.disabled = isLoading;
+}
+
+function setActiveRange(range) {
+    activeRange = range;
+    rangeButtons.forEach((button) => {
+        const isActive = button.dataset.rangeOption === range;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+    });
 }
 
 function setKpis(summary) {
     Object.entries(summary).forEach(([key, value]) => {
         const node = document.querySelector(`[data-kpi="${key}"]`);
-        if (node) {
-            node.textContent = numberFormat(value);
+        if (!node) {
+            return;
         }
+        node.textContent = typeof value === "number" ? numberFormat(value) : value || "Sin datos";
     });
 }
 
@@ -26,7 +47,14 @@ function emptyRow(message) {
     return element;
 }
 
-function metricRow(label, value, detail = "") {
+function badge(text) {
+    const element = document.createElement("span");
+    element.className = "metric-badge";
+    element.textContent = text;
+    return element;
+}
+
+function metricRow(label, value, detail = "", badgeText = "") {
     const row = document.createElement("div");
     row.className = "metric-row";
 
@@ -39,11 +67,17 @@ function metricRow(label, value, detail = "") {
     detailNode.textContent = detail;
     copy.append(labelNode, detailNode);
 
+    const valueWrap = document.createElement("div");
+    valueWrap.className = "metric-side";
     const valueNode = document.createElement("strong");
     valueNode.className = "metric-value";
     valueNode.textContent = numberFormat(value);
+    valueWrap.appendChild(valueNode);
+    if (badgeText) {
+        valueWrap.appendChild(badge(badgeText));
+    }
 
-    row.append(copy, valueNode);
+    row.append(copy, valueWrap);
     return row;
 }
 
@@ -77,7 +111,7 @@ function renderRecentEvents(events) {
         meta.textContent = [
             event.language ? `Idioma ${event.language}` : "",
             event.dish_id ? `Plato #${event.dish_id}` : "",
-        ].filter(Boolean).join(" · ") || "Evento general";
+        ].filter(Boolean).join(" - ") || "Evento general";
         copy.append(type, meta);
 
         const time = document.createElement("time");
@@ -105,16 +139,51 @@ function renderInsights(insights) {
     });
 }
 
-function prepareCharts(data) {
-    window.dashboardChartData = {
-        languages: data.languages,
-        topDishes: data.top_dishes,
-        topSearches: data.top_searches,
-    };
+function renderMiniBars(containerId, items, valueKey, labelKey) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+    const max = Math.max(...items.map((item) => Number(item[valueKey] || 0)), 1);
+    if (!items.length) {
+        container.appendChild(emptyRow("Sin datos para graficar."));
+        return;
+    }
+    items.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "chart-bar";
+        const label = document.createElement("span");
+        label.textContent = item[labelKey];
+        const bar = document.createElement("i");
+        bar.style.width = `${Math.max((Number(item[valueKey] || 0) / max) * 100, 4)}%`;
+        const value = document.createElement("strong");
+        value.textContent = numberFormat(item[valueKey]);
+        row.append(label, bar, value);
+        container.appendChild(row);
+    });
+}
+
+function renderViewsChart(data) {
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardCharts.views = data.events_by_day;
+    renderMiniBars("viewsChart", data.events_by_day, "total_events", "date");
+}
+
+function renderLanguagesChart(data) {
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardCharts.languages = data.languages;
+    renderMiniBars("languagesChart", data.languages, "count", "language");
+}
+
+function renderTopDishesChart(data) {
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardCharts.topDishes = data.top_dishes;
+    renderMiniBars("topDishesChart", data.top_dishes, "views", "name");
 }
 
 function renderDashboard(data) {
     setKpis(data.summary);
+    dashboardMeta.textContent = `Rango: ${data.range} · Eventos: ${numberFormat(
+        data.events_by_day.reduce((total, day) => total + day.total_events, 0),
+    )}`;
     renderMetricList("topDishes", data.top_dishes, "Todavia no hay platos vistos.", (dish) =>
         metricRow(dish.name, dish.views, dish.dish_id ? `ID ${dish.dish_id}` : "Sin plato asociado"),
     );
@@ -122,33 +191,51 @@ function renderDashboard(data) {
         metricRow(search.query, search.count, "busqueda registrada"),
     );
     renderMetricList("languages", data.languages, "Todavia no hay idiomas registrados.", (language) =>
-        metricRow(language.language, language.count, "eventos con idioma"),
+        metricRow(language.language, language.count, "eventos con idioma", `${language.percentage}%`),
     );
     renderRecentEvents(data.recent_events);
     renderInsights(data.insights);
-    prepareCharts(data);
+    renderViewsChart(data);
+    renderLanguagesChart(data);
+    renderTopDishesChart(data);
 }
 
-async function loadDashboard() {
+async function loadDashboard(range = activeRange) {
     const restaurantId = dashboardRoot?.dataset.restaurantId;
     const params = new URLSearchParams();
     if (restaurantId) {
         params.set("restaurant_id", restaurantId);
     }
-    const url = `/api/dashboard/summary${params.toString() ? `?${params}` : ""}`;
+    params.set("range", range);
+    const url = `/api/dashboard/summary?${params}`;
 
     try {
+        setLoading(true);
         showState("Cargando datos reales...");
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error("Dashboard request failed");
         }
         const data = await response.json();
+        setActiveRange(data.range);
         renderDashboard(data);
         showState("", false);
     } catch {
-        showState("No se pudieron cargar las metricas del dashboard.");
+        showState("No se pudieron cargar las metricas del dashboard.", true, "error");
+    } finally {
+        setLoading(false);
     }
 }
 
-loadDashboard();
+rangeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        loadDashboard(button.dataset.rangeOption);
+    });
+});
+
+refreshButton.addEventListener("click", () => {
+    loadDashboard(activeRange);
+});
+
+setActiveRange(activeRange);
+loadDashboard(activeRange);

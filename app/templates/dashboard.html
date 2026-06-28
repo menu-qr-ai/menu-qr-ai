@@ -8,18 +8,30 @@
 {% endblock %}
 
 {% block body %}
-    <main class="dashboard-shell" data-restaurant-id="{{ restaurant_id or '' }}">
+    <main class="dashboard-shell" data-restaurant-id="{{ restaurant_id or '' }}" data-range="{{ range or '30d' }}">
         <header class="dashboard-header">
             <div>
                 <p class="dashboard-eyebrow">Analytics</p>
                 <h1>Dashboard Inteligente</h1>
-                <p class="dashboard-subtitle">Lectura operativa basada solo en eventos reales del menu.</p>
+                <p class="dashboard-subtitle">Centro de inteligencia basado solo en eventos reales del menu.</p>
             </div>
             <nav class="dashboard-actions" aria-label="Acciones del dashboard">
+                <button id="refreshDashboard" class="icon-button" type="button" title="Actualizar">↻</button>
                 <a href="/admin">Admin</a>
                 <a href="/menu">Ver menu</a>
             </nav>
         </header>
+
+        <section class="dashboard-toolbar" aria-label="Filtros">
+            <div class="range-control" role="group" aria-label="Rango temporal">
+                <button type="button" data-range-option="today">Hoy</button>
+                <button type="button" data-range-option="7d">7 dias</button>
+                <button type="button" data-range-option="30d">30 dias</button>
+                <button type="button" data-range-option="90d">90 dias</button>
+                <button type="button" data-range-option="all">Todo</button>
+            </div>
+            <span id="dashboardMeta" class="dashboard-badge">Datos reales</span>
+        </section>
 
         <section class="kpi-grid" aria-label="Resumen">
             <article class="kpi-card">
@@ -35,16 +47,42 @@
                 <strong data-kpi="total_searches">0</strong>
             </article>
             <article class="kpi-card">
-                <span>Cambios idioma</span>
-                <strong data-kpi="total_language_changes">0</strong>
-            </article>
-            <article class="kpi-card">
                 <span>Traducciones</span>
                 <strong data-kpi="total_translation_requests">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Ratio plato/menu</span>
+                <strong data-kpi="dish_view_menu_view_ratio">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Plato mas consultado</span>
+                <strong data-kpi="top_dish_name">Sin datos</strong>
             </article>
         </section>
 
         <section id="dashboardState" class="dashboard-state">Cargando datos reales...</section>
+
+        <section class="dashboard-grid chart-grid" aria-label="Graficos preparados">
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Evolucion</p>
+                        <h2>Visitas, busquedas y traducciones</h2>
+                    </div>
+                </div>
+                <div id="viewsChart" class="chart-placeholder" aria-label="Grafico de evolucion"></div>
+            </article>
+
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Idiomas</p>
+                        <h2>Distribucion real</h2>
+                    </div>
+                </div>
+                <div id="languagesChart" class="chart-placeholder" aria-label="Grafico de idiomas"></div>
+            </article>
+        </section>
 
         <section class="dashboard-grid" aria-label="Metricas principales">
             <article class="dashboard-panel">
@@ -55,6 +93,7 @@
                     </div>
                 </div>
                 <div id="topDishes" class="metric-list"></div>
+                <div id="topDishesChart" class="chart-placeholder compact" aria-label="Grafico de platos"></div>
             </article>
 
             <article class="dashboard-panel">
@@ -71,11 +110,10 @@
                 <div class="panel-heading">
                     <div>
                         <p class="dashboard-eyebrow">Idiomas</p>
-                        <h2>Distribucion</h2>
+                        <h2>Porcentaje utilizado</h2>
                     </div>
                 </div>
                 <div id="languages" class="metric-list"></div>
-                <div id="languageChartMount" class="chart-placeholder" aria-label="Espacio reservado para graficos"></div>
             </article>
 
             <article class="dashboard-panel">
@@ -93,8 +131,9 @@
             <div class="panel-heading">
                 <div>
                     <p class="dashboard-eyebrow">Recomendaciones</p>
-                    <h2 id="insightsTitle">Lecturas heuristicas</h2>
+                    <h2 id="insightsTitle">Insights heuristicas</h2>
                 </div>
+                <span class="dashboard-badge">Sin IA generativa</span>
             </div>
             <div id="insights" class="insight-list"></div>
         </section>
