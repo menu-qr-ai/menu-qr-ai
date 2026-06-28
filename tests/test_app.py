@@ -2,8 +2,7 @@ import tempfile
 import unittest
 
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
@@ -148,6 +147,42 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(payload["event_type"], "menu_view")
         self.assertEqual(payload["metadata"], {"source": "test"})
         self.assertIn("created_at", payload)
+
+    def test_analytics_event_accepts_minimal_body(self):
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/analytics/events",
+                json={"event_type": "menu_view"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["event_type"], "menu_view")
+        self.assertIsNone(payload["restaurant_id"])
+        self.assertIsNone(payload["dish_id"])
+        self.assertIsNone(payload["language"])
+        self.assertIsNone(payload["metadata"])
+
+    def test_analytics_event_accepts_full_body_with_nulls(self):
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/analytics/events",
+                json={
+                    "restaurant_id": 1,
+                    "event_type": "menu_view",
+                    "dish_id": None,
+                    "language": "es",
+                    "metadata": {"source": "swagger"},
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["restaurant_id"], 1)
+        self.assertEqual(payload["event_type"], "menu_view")
+        self.assertIsNone(payload["dish_id"])
+        self.assertEqual(payload["language"], "es")
+        self.assertEqual(payload["metadata"], {"source": "swagger"})
 
     def test_analytics_event_rejects_invalid_type(self):
         with TestClient(app) as client:
