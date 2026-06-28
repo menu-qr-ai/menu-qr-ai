@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Ajustes | {{ restaurant.name }}{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block body %}
+    <aside class="admin-sidebar">
+        <a class="brand" href="/admin">
+            <span class="brand-mark">M</span>
+            <span>Menu QR AI</span>
+        </a>
+        <nav class="admin-nav" aria-label="Administracion">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/restaurants" class="active">Restaurantes</a>
+            <a href="/admin/dashboard?restaurant_id={{ restaurant.id }}">Analitica</a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <div>
+                <p class="eyebrow">Configuracion</p>
+                <h1>{{ restaurant.name }}</h1>
+            </div>
+            <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">Ver menu publico</a>
+        </header>
+
+        <section class="admin-panel">
+            <form class="settings-form" aria-label="Ajustes del restaurante">
+                <label>
+                    <span>Nombre</span>
+                    <input value="{{ restaurant.name }}" name="name">
+                </label>
+                <label>
+                    <span>Descripcion</span>
+                    <textarea name="description">{{ restaurant.description or "" }}</textarea>
+                </label>
+                <label>
+                    <span>Logo URL</span>
+                    <input value="{{ restaurant.logo_url or '' }}" name="logo_url">
+                </label>
+                <label>
+                    <span>Cover URL</span>
+                    <input value="{{ restaurant.cover_image_url or '' }}" name="cover_image_url">
+                </label>
+                <label>
+                    <span>Color principal</span>
+                    <input value="{{ restaurant.primary_color or '' }}" name="primary_color" placeholder="#2563eb">
+                </label>
+                <label>
+                    <span>Color acento</span>
+                    <input value="{{ restaurant.accent_color or '' }}" name="accent_color" placeholder="#0f766e">
+                </label>
+                <label>
+                    <span>Idioma por defecto</span>
+                    <input value="{{ restaurant.default_language or 'es' }}" name="default_language">
+                </label>
+                <label>
+                    <span>Moneda</span>
+                    <input value="{{ restaurant.currency or 'EUR' }}" name="currency">
+                </label>
+                <label>
+                    <span>Email</span>
+                    <input value="{{ restaurant.email or '' }}" name="email">
+                </label>
+                <label>
+                    <span>Telefono</span>
+                    <input value="{{ restaurant.phone or '' }}" name="phone">
+                </label>
+                <label class="settings-wide">
+                    <span>Direccion</span>
+                    <input value="{{ restaurant.address or '' }}" name="address">
+                </label>
+            </form>
+            <p class="settings-note">
+                API preparada: PATCH /api/restaurants/{{ restaurant.id }}. La autenticacion y guardado visual llegan en un sprint posterior.
+            </p>
+        </section>
+    </main>
+{% endblock %}

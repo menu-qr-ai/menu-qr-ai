@@ -16,7 +16,7 @@
                 <p class="dashboard-subtitle">Centro de inteligencia basado solo en eventos reales del menu.</p>
             </div>
             <nav class="dashboard-actions" aria-label="Acciones del dashboard">
-                <button id="refreshDashboard" class="icon-button" type="button" title="Actualizar">↻</button>
+                <button id="refreshDashboard" class="icon-button" type="button" title="Actualizar">R</button>
                 <a href="/admin">Admin</a>
                 <a href="/menu">Ver menu</a>
             </nav>
@@ -30,6 +30,17 @@
                 <button type="button" data-range-option="90d">90 dias</button>
                 <button type="button" data-range-option="all">Todo</button>
             </div>
+            <label class="dashboard-select" for="restaurantSelect">
+                <span>Restaurante</span>
+                <select id="restaurantSelect">
+                    <option value="">Todos</option>
+                    {% for restaurant in restaurants %}
+                        <option value="{{ restaurant.id }}" {% if restaurant_id == restaurant.id %}selected{% endif %}>
+                            {{ restaurant.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
             <span id="dashboardMeta" class="dashboard-badge">Datos reales</span>
         </section>
 

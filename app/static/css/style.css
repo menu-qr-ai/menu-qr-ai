@@ -83,6 +83,14 @@ select {
     color: var(--surface);
 }
 
+.brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    border: 1px solid var(--line);
+}
+
 .admin-link {
     display: inline-flex;
     align-items: center;
@@ -103,6 +111,7 @@ select {
 }
 
 .hero {
+    position: relative;
     min-height: 270px;
     display: flex;
     align-items: center;
@@ -111,7 +120,19 @@ select {
     padding: 52px 0 60px;
 }
 
+.hero-cover {
+    position: absolute;
+    inset: 18px 0;
+    width: 100%;
+    height: calc(100% - 36px);
+    border-radius: var(--radius);
+    object-fit: cover;
+    opacity: 0.12;
+    pointer-events: none;
+}
+
 .hero-copy {
+    position: relative;
     max-width: 720px;
 }
 
@@ -141,6 +162,7 @@ select {
 }
 
 .hero-status {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -557,6 +579,79 @@ select {
     color: var(--success);
 }
 
+.settings-list {
+    display: grid;
+    gap: 14px;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+}
+
+.settings-row h2,
+.settings-row p {
+    margin: 0;
+}
+
+.settings-row p,
+.settings-note {
+    color: var(--muted);
+}
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.settings-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.settings-form label {
+    display: grid;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.settings-form input,
+.settings-form textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.settings-form textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.settings-wide {
+    grid-column: 1 / -1;
+}
+
+.settings-note {
+    margin: 18px 0 0;
+    line-height: 1.6;
+}
+
 @keyframes cardIn {
     to {
         opacity: 1;
@@ -608,6 +703,16 @@ select {
 
     .admin-main {
         padding: 24px 14px;
+    }
+
+    .settings-row,
+    .settings-actions {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .settings-form {
+        grid-template-columns: 1fr;
     }
 
     .search-field,

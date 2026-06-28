@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, log_request_middleware
 from app.models import Category, Dish, Restaurant  # noqa: F401
-from app.routers import admin, ai, analytics, api, dashboard, health, menu, restaurant, translation
+from app.routers import admin, ai, analytics, api, dashboard, health, menu, restaurant, restaurants, translation
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     application.include_router(translation.router)
     application.include_router(analytics.router)
     application.include_router(dashboard.router)
+    application.include_router(restaurants.router)
     application.include_router(restaurant.router)
     application.include_router(api.router)
     application.include_router(admin.router)

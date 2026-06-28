@@ -42,7 +42,7 @@ class AppSmokeTests(unittest.TestCase):
     @classmethod
     def seed_database(cls):
         with cls.SessionTesting() as db:
-            restaurant = Restaurant(id=1, name="Demo Restaurant")
+            restaurant = Restaurant(id=1, name="Demo Restaurant", slug="demo-restaurant")
             category = Category(id=1, name="Pizzas", restaurant_id=1)
             dish = Dish(
                 id=1,
@@ -98,6 +98,54 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("id", response.json()[0])
 
+    def test_api_restaurant_can_be_created(self):
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/restaurants",
+                json={"name": "Casa Sprint", "city": "Madrid", "default_language": "es"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["name"], "Casa Sprint")
+        self.assertEqual(payload["slug"], "casa-sprint")
+        self.assertEqual(payload["city"], "Madrid")
+
+    def test_api_restaurants_can_be_listed(self):
+        with TestClient(app) as client:
+            response = client.get("/api/restaurants")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.json()), 1)
+
+    def test_api_restaurant_can_be_loaded_by_slug(self):
+        with TestClient(app) as client:
+            created = client.post("/api/restaurants", json={"name": "Slug Bistro"}).json()
+            response = client.get(f"/api/restaurants/by-slug/{created['slug']}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], created["id"])
+
+    def test_api_restaurant_settings_can_be_updated(self):
+        with TestClient(app) as client:
+            created = client.post("/api/restaurants", json={"name": "Settings Cafe"}).json()
+            response = client.patch(
+                f"/api/restaurants/{created['id']}",
+                json={
+                    "description": "Menu premium",
+                    "primary_color": "#111827",
+                    "currency": "usd",
+                    "default_language": "en",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["description"], "Menu premium")
+        self.assertEqual(payload["primary_color"], "#111827")
+        self.assertEqual(payload["currency"], "usd")
+        self.assertEqual(payload["default_language"], "en")
+
     def test_menu_page_renders_with_assets_and_data(self):
         with TestClient(app) as client:
             response = client.get("/menu")
@@ -108,6 +156,31 @@ class AppSmokeTests(unittest.TestCase):
         self.assertIn("menuSearch", response.text)
         self.assertIn("window.menuData", response.text)
 
+    def test_public_slug_menu_renders_for_restaurant(self):
+        with TestClient(app) as client:
+            created = client.post("/api/restaurants", json={"name": "Public Menu House"}).json()
+            response = client.get(f"/r/{created['slug']}/menu")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Public Menu House", response.text)
+        self.assertIn(f"restaurantId: {created['id']}", response.text)
+
+    def test_public_slug_menu_returns_404_when_missing(self):
+        with TestClient(app) as client:
+            response = client.get("/r/slug-inexistente/menu")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["error"]["code"], "restaurant_not_found")
+
+    def test_menu_tracking_uses_real_restaurant_id(self):
+        with TestClient(app) as client:
+            created = client.post("/api/restaurants", json={"name": "Tracking Table"}).json()
+            response = client.get(f"/r/{created['slug']}/menu")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(f"restaurantId: {created['id']}", response.text)
+        self.assertIn('"id": ' + str(created["id"]), response.text)
+
     def test_admin_dashboard_renders(self):
         with TestClient(app) as client:
             response = client.get("/admin")
@@ -116,6 +189,22 @@ class AppSmokeTests(unittest.TestCase):
         self.assertIn("Panel de administracion", response.text)
         self.assertIn("Suscripciones", response.text)
         self.assertIn("Analitica", response.text)
+
+    def test_admin_restaurants_page_renders(self):
+        with TestClient(app) as client:
+            response = client.get("/admin/restaurants")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Restaurantes", response.text)
+
+    def test_admin_restaurant_settings_page_renders(self):
+        with TestClient(app) as client:
+            created = client.post("/api/restaurants", json={"name": "Admin Settings"}).json()
+            response = client.get(f"/admin/restaurants/{created['id']}/settings")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Admin Settings", response.text)
+        self.assertIn("PATCH /api/restaurants", response.text)
 
     def test_static_assets_are_served(self):
         with TestClient(app) as client:
@@ -278,6 +367,14 @@ class AppSmokeTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["restaurant_id"], 2)
         self.assertEqual(payload["summary"]["total_menu_views"], 2)
+
+    def test_dashboard_page_includes_restaurant_selector(self):
+        with TestClient(app) as client:
+            response = client.get("/admin/dashboard?restaurant_id=1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("restaurantSelect", response.text)
+        self.assertIn("Demo Restaurant", response.text)
 
     def test_dashboard_range_today_filters_events(self):
         old_date = datetime.utcnow() - timedelta(days=2)

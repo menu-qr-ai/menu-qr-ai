@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Restaurantes | Menu QR AI{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block body %}
+    <aside class="admin-sidebar">
+        <a class="brand" href="/admin">
+            <span class="brand-mark">M</span>
+            <span>Menu QR AI</span>
+        </a>
+        <nav class="admin-nav" aria-label="Administracion">
+            <a href="/admin">Dashboard</a>
+            <a href="/admin/restaurants" class="active">Restaurantes</a>
+            <a href="/admin/dashboard">Analitica</a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <div>
+                <p class="eyebrow">SaaS multi-restaurante</p>
+                <h1>Restaurantes</h1>
+            </div>
+            <a class="admin-link" href="/menu">Ver menu</a>
+        </header>
+
+        <section class="admin-panel">
+            <div class="settings-list">
+                {% for restaurant in restaurants %}
+                    <article class="settings-row">
+                        <div>
+                            <h2>{{ restaurant.name }}</h2>
+                            <p>{{ restaurant.slug or "sin-slug" }} - {{ restaurant.city or "Ciudad no indicada" }}</p>
+                        </div>
+                        <div class="settings-actions">
+                            <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">Menu publico</a>
+                            <a class="admin-link" href="/admin/restaurants/{{ restaurant.id }}/settings">Ajustes</a>
+                        </div>
+                    </article>
+                {% else %}
+                    <p class="empty-message">Todavia no hay restaurantes.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+{% endblock %}

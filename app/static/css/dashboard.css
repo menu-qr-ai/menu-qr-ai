@@ -38,6 +38,7 @@
 
 .dashboard-header,
 .dashboard-toolbar {
+    align-items: center;
     justify-content: space-between;
     gap: 24px;
     margin-bottom: 22px;
@@ -130,6 +131,25 @@
     font-size: 12px;
     font-weight: 900;
     white-space: nowrap;
+}
+
+.dashboard-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dash-muted);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.dashboard-select select {
+    min-height: 38px;
+    padding: 0 34px 0 12px;
+    border: 1px solid var(--dash-line);
+    border-radius: var(--dash-radius);
+    background: var(--dash-surface);
+    color: var(--dash-text);
+    font: inherit;
 }
 
 .kpi-grid,

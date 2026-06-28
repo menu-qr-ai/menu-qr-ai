@@ -2,6 +2,7 @@ const dashboardRoot = document.querySelector(".dashboard-shell");
 const dashboardState = document.getElementById("dashboardState");
 const dashboardMeta = document.getElementById("dashboardMeta");
 const refreshButton = document.getElementById("refreshDashboard");
+const restaurantSelect = document.getElementById("restaurantSelect");
 const rangeButtons = Array.from(document.querySelectorAll("[data-range-option]"));
 
 let activeRange = dashboardRoot?.dataset.range || "30d";
@@ -181,7 +182,7 @@ function renderTopDishesChart(data) {
 
 function renderDashboard(data) {
     setKpis(data.summary);
-    dashboardMeta.textContent = `Rango: ${data.range} · Eventos: ${numberFormat(
+    dashboardMeta.textContent = `Rango: ${data.range} - Eventos: ${numberFormat(
         data.events_by_day.reduce((total, day) => total + day.total_events, 0),
     )}`;
     renderMetricList("topDishes", data.top_dishes, "Todavia no hay platos vistos.", (dish) =>
@@ -201,7 +202,7 @@ function renderDashboard(data) {
 }
 
 async function loadDashboard(range = activeRange) {
-    const restaurantId = dashboardRoot?.dataset.restaurantId;
+    const restaurantId = restaurantSelect ? restaurantSelect.value : dashboardRoot?.dataset.restaurantId;
     const params = new URLSearchParams();
     if (restaurantId) {
         params.set("restaurant_id", restaurantId);
@@ -234,6 +235,11 @@ rangeButtons.forEach((button) => {
 });
 
 refreshButton.addEventListener("click", () => {
+    loadDashboard(activeRange);
+});
+
+restaurantSelect?.addEventListener("change", () => {
+    dashboardRoot.dataset.restaurantId = restaurantSelect.value;
     loadDashboard(activeRange);
 });
 

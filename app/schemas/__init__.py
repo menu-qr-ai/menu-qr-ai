@@ -14,7 +14,7 @@ from app.schemas.dish import DishRead
 from app.schemas.image_generation import ImageGenerationRead
 from app.schemas.menu import MenuRead
 from app.schemas.qr_code import QRCodeRead
-from app.schemas.restaurant import RestaurantRead
+from app.schemas.restaurant import RestaurantCreate, RestaurantPublic, RestaurantRead, RestaurantUpdate
 from app.schemas.subscription import SubscriptionRead
 from app.schemas.translation import TranslationRead, TranslationRequest
 from app.schemas.usage_log import UsageLogRead
@@ -35,6 +35,9 @@ __all__ = [
     "QRCodeRead",
     "RecentEvent",
     "RestaurantRead",
+    "RestaurantCreate",
+    "RestaurantPublic",
+    "RestaurantUpdate",
     "SearchMetric",
     "SubscriptionRead",
     "TopDishMetric",

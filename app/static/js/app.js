@@ -6,6 +6,7 @@ const menuState = document.getElementById("menuState");
 
 const categories = window.menuData?.categories || [];
 const dishes = window.menuData?.dishes || [];
+const restaurant = window.menuData?.restaurant || {};
 const restaurantId = window.menuData?.restaurantId || 1;
 
 let activeCategoryId = null;
@@ -17,8 +18,20 @@ const trackedDishViews = new Set();
 function formatPrice(price) {
     return new Intl.NumberFormat("es-ES", {
         style: "currency",
-        currency: "EUR",
+        currency: restaurant.currency || "EUR",
     }).format(Number(price || 0));
+}
+
+function applyRestaurantBranding() {
+    if (restaurant.primary_color) {
+        document.documentElement.style.setProperty("--accent", restaurant.primary_color);
+    }
+    if (restaurant.accent_color) {
+        document.documentElement.style.setProperty("--teal", restaurant.accent_color);
+    }
+    if (languageSelect && restaurant.default_language) {
+        languageSelect.value = restaurant.default_language;
+    }
 }
 
 function createTextElement(tagName, className, text) {
@@ -288,6 +301,7 @@ languageSelect?.addEventListener("change", () => {
     });
 });
 
+applyRestaurantBranding();
 showMenuState("Cargando carta...");
 trackEvent("menu_view", {
     metadata: {
