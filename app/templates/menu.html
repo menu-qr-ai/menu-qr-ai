@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ restaurant_name }} | Menu QR AI{% endblock %}
+
+{% block body %}
+    <header class="site-header">
+        <nav class="nav-bar" aria-label="Navegacion principal">
+            <a class="brand" href="/menu">
+                <span class="brand-mark">M</span>
+                <span>Menu QR AI</span>
+            </a>
+            <a class="admin-link" href="/admin">Admin</a>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Carta digital inteligente</p>
+                <h1>{{ restaurant_name }}</h1>
+                <p class="hero-text">
+                    Una experiencia de menu limpia, rapida y preparada para traducciones,
+                    imagenes y recomendaciones con IA.
+                </p>
+            </div>
+            <div class="hero-status" aria-label="Estado del servicio">
+                <span class="status-dot"></span>
+                Disponible ahora
+            </div>
+        </section>
+    </header>
+
+    <main class="page-shell">
+        <section class="menu-toolbar" aria-labelledby="menu-title">
+            <div>
+                <p class="eyebrow">Carta</p>
+                <h2 id="menu-title">Platos disponibles</h2>
+            </div>
+            <div class="toolbar-actions">
+                <label class="search-field" for="menuSearch">
+                    <span>Buscar</span>
+                    <input id="menuSearch" type="search" placeholder="Pizza, queso, alergenos...">
+                </label>
+                <label class="language-picker" for="languageSelect">
+                    <span>Idioma</span>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="fr">Francais</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <section class="category-strip" aria-label="Categorias">
+            <div id="categories" class="category-list"></div>
+        </section>
+
+        <section id="menuState" class="menu-state" hidden></section>
+        <section id="dishes" class="dish-grid" aria-live="polite"></section>
+    </main>
+
+    <script>
+        window.menuData = {
+            categories: {{ categories | tojson }},
+            dishes: {{ dishes | tojson }}
+        };
+    </script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/app.js') }}"></script>
+{% endblock %}

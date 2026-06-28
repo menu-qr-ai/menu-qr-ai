@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Admin | Menu QR AI{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block body %}
+    <aside class="admin-sidebar">
+        <a class="brand" href="/menu">
+            <span class="brand-mark">M</span>
+            <span>Menu QR AI</span>
+        </a>
+        <nav class="admin-nav" aria-label="Administracion">
+            {% for section in sections %}
+                <a href="#" class="{% if loop.first %}active{% endif %}">{{ section }}</a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <div>
+                <p class="eyebrow">Panel de administracion</p>
+                <h1>Dashboard</h1>
+            </div>
+            <a class="admin-link" href="/menu">Ver menu</a>
+        </header>
+
+        <section class="admin-grid" aria-label="Resumen">
+            {% for metric in metrics %}
+                <article class="metric-card">
+                    <span>{{ metric.label }}</span>
+                    <strong>{{ metric.value }}</strong>
+                </article>
+            {% endfor %}
+        </section>
+
+        <section class="admin-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Sistema</p>
+                    <h2>Arquitectura preparada</h2>
+                </div>
+            </div>
+            <div class="admin-feature-grid">
+                {% for section in sections %}
+                    <article>
+                        <h3>{{ section }}</h3>
+                        <p>Modulo reservado para la siguiente fase del MVP.</p>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="admin-panel">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Produccion</p>
+                    <h2>Estado operativo</h2>
+                </div>
+            </div>
+            <div class="status-list">
+                {% for item in system_status %}
+                    <div class="status-row">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+{% endblock %}

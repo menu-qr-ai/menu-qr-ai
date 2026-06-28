@@ -1,0 +1,58 @@
+﻿menu-qr-ai/
+|   main.py
+|   database.py
+|   models.py
+|   README.md
+|   requirements.txt
+|   estructura.txt
+|
++---app
+|   |   __init__.py
+|   |   config.py
+|   |   database.py
+|   |   main.py
+|   |   templates.py
+|   |
+|   +---models
+|   |       __init__.py
+|   |       category.py
+|   |       dish.py
+|   |       restaurant.py
+|   |
+|   +---routers
+|   |       __init__.py
+|   |       admin.py
+|   |       ai.py
+|   |       menu.py
+|   |
+|   +---schemas
+|   |       __init__.py
+|   |       menu.py
+|   |
+|   +---services
+|   |       __init__.py
+|   |       ai_service.py
+|   |       menu_service.py
+|   |       qr_service.py
+|   |       seed_service.py
+|   |
+|   +---static
+|   |   +---css
+|   |   |       style.css
+|   |   |
+|   |   \---js
+|   |           app.js
+|   |
+|   +---templates
+|   |   |   base.html
+|   |   |   menu.html
+|   |   |
+|   |   \---admin
+|   |           dashboard.html
+|   |
+|   \---utils
+|           __init__.py
+|           serialization.py
+|
+\---tests
+        test_app.py

@@ -1,4 +1,4 @@
-﻿fastapi
+fastapi
 uvicorn
 jinja2
 sqlalchemy
@@ -6,3 +6,8 @@ qrcode
 pillow
 openai
 python-multipart
+pydantic
+alembic
+pytest
+pytest-cov
+ruff
