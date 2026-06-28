@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 
@@ -210,6 +211,77 @@ class AppSmokeTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 2)
+
+    def test_dashboard_summary_returns_empty_state_without_events(self):
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["summary"]["total_menu_views"], 0)
+        self.assertEqual(payload["top_dishes"], [])
+        self.assertEqual(payload["top_searches"], [])
+        self.assertEqual(payload["insights"][0]["title"], "No hay suficientes datos todavia")
+
+    def test_dashboard_summary_changes_with_analytics_events(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=1, event_type="dish_view", dish_id=1),
+                    AnalyticsEvent(restaurant_id=1, event_type="dish_view", dish_id=1),
+                    AnalyticsEvent(
+                        restaurant_id=1,
+                        event_type="search",
+                        metadata_json=json.dumps({"search_query": "pizza"}),
+                    ),
+                    AnalyticsEvent(restaurant_id=1, event_type="language_change", language="en"),
+                    AnalyticsEvent(restaurant_id=1, event_type="translation_request", language="en"),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?restaurant_id=1")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["summary"]["total_menu_views"], 1)
+        self.assertEqual(payload["summary"]["total_dish_views"], 2)
+        self.assertEqual(payload["summary"]["total_searches"], 1)
+        self.assertEqual(payload["summary"]["total_language_changes"], 1)
+        self.assertEqual(payload["summary"]["total_translation_requests"], 1)
+        self.assertEqual(payload["top_dishes"][0]["name"], "Pizza Margarita")
+        self.assertEqual(payload["top_dishes"][0]["views"], 2)
+        self.assertEqual(payload["top_searches"][0], {"query": "pizza", "count": 1})
+        self.assertEqual(payload["languages"][0], {"language": "en", "count": 2})
+
+    def test_dashboard_summary_filters_by_restaurant_id(self):
+        with self.SessionTesting() as db:
+            db.add_all(
+                [
+                    AnalyticsEvent(restaurant_id=1, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=2, event_type="menu_view"),
+                    AnalyticsEvent(restaurant_id=2, event_type="menu_view"),
+                ]
+            )
+            db.commit()
+
+        with TestClient(app) as client:
+            response = client.get("/api/dashboard/summary?restaurant_id=2")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["restaurant_id"], 2)
+        self.assertEqual(payload["summary"]["total_menu_views"], 2)
+
+    def test_dashboard_page_renders_shell(self):
+        with TestClient(app) as client:
+            response = client.get("/admin/dashboard?restaurant_id=1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Dashboard Inteligente", response.text)
+        self.assertIn("dashboard.js", response.text)
 
 
 if __name__ == "__main__":

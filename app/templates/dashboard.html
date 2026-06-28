@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Inteligente | Menu QR AI{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}">
+{% endblock %}
+
+{% block body %}
+    <main class="dashboard-shell" data-restaurant-id="{{ restaurant_id or '' }}">
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Analytics</p>
+                <h1>Dashboard Inteligente</h1>
+                <p class="dashboard-subtitle">Lectura operativa basada solo en eventos reales del menu.</p>
+            </div>
+            <nav class="dashboard-actions" aria-label="Acciones del dashboard">
+                <a href="/admin">Admin</a>
+                <a href="/menu">Ver menu</a>
+            </nav>
+        </header>
+
+        <section class="kpi-grid" aria-label="Resumen">
+            <article class="kpi-card">
+                <span>Visitas menu</span>
+                <strong data-kpi="total_menu_views">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Vistas platos</span>
+                <strong data-kpi="total_dish_views">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Busquedas</span>
+                <strong data-kpi="total_searches">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Cambios idioma</span>
+                <strong data-kpi="total_language_changes">0</strong>
+            </article>
+            <article class="kpi-card">
+                <span>Traducciones</span>
+                <strong data-kpi="total_translation_requests">0</strong>
+            </article>
+        </section>
+
+        <section id="dashboardState" class="dashboard-state">Cargando datos reales...</section>
+
+        <section class="dashboard-grid" aria-label="Metricas principales">
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Platos</p>
+                        <h2>Top platos vistos</h2>
+                    </div>
+                </div>
+                <div id="topDishes" class="metric-list"></div>
+            </article>
+
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Busqueda</p>
+                        <h2>Top busquedas</h2>
+                    </div>
+                </div>
+                <div id="topSearches" class="metric-list"></div>
+            </article>
+
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Idiomas</p>
+                        <h2>Distribucion</h2>
+                    </div>
+                </div>
+                <div id="languages" class="metric-list"></div>
+                <div id="languageChartMount" class="chart-placeholder" aria-label="Espacio reservado para graficos"></div>
+            </article>
+
+            <article class="dashboard-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="dashboard-eyebrow">Actividad</p>
+                        <h2>Eventos recientes</h2>
+                    </div>
+                </div>
+                <div id="recentEvents" class="event-list"></div>
+            </article>
+        </section>
+
+        <section class="dashboard-panel insights-panel" aria-labelledby="insightsTitle">
+            <div class="panel-heading">
+                <div>
+                    <p class="dashboard-eyebrow">Recomendaciones</p>
+                    <h2 id="insightsTitle">Lecturas heuristicas</h2>
+                </div>
+            </div>
+            <div id="insights" class="insight-list"></div>
+        </section>
+    </main>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/dashboard.js') }}"></script>
+{% endblock %}

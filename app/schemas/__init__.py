@@ -1,5 +1,14 @@
 from app.schemas.analytics import AnalyticsEventCreate, AnalyticsEventRead
 from app.schemas.category import CategoryRead
+from app.schemas.dashboard import (
+    DashboardInsight,
+    DashboardResponse,
+    DashboardSummary,
+    LanguageMetric,
+    RecentEvent,
+    SearchMetric,
+    TopDishMetric,
+)
 from app.schemas.dish import DishRead
 from app.schemas.image_generation import ImageGenerationRead
 from app.schemas.menu import MenuRead
@@ -15,11 +24,18 @@ __all__ = [
     "AnalyticsEventCreate",
     "AnalyticsEventRead",
     "DishRead",
+    "DashboardInsight",
+    "DashboardResponse",
+    "DashboardSummary",
     "ImageGenerationRead",
+    "LanguageMetric",
     "MenuRead",
     "QRCodeRead",
+    "RecentEvent",
     "RestaurantRead",
+    "SearchMetric",
     "SubscriptionRead",
+    "TopDishMetric",
     "TranslationRead",
     "TranslationRequest",
     "UsageLogRead",
