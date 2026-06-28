@@ -61,6 +61,7 @@
 
     <script>
         window.menuData = {
+            restaurantId: {{ restaurant_id | tojson }},
             categories: {{ categories | tojson }},
             dishes: {{ dishes | tojson }}
         };

@@ -6,9 +6,13 @@ const menuState = document.getElementById("menuState");
 
 const categories = window.menuData?.categories || [];
 const dishes = window.menuData?.dishes || [];
+const restaurantId = window.menuData?.restaurantId || 1;
 
 let activeCategoryId = null;
 let searchQuery = "";
+let searchTrackingTimer = null;
+
+const trackedDishViews = new Set();
 
 function formatPrice(price) {
     return new Intl.NumberFormat("es-ES", {
@@ -24,6 +28,65 @@ function createTextElement(tagName, className, text) {
     }
     element.textContent = text;
     return element;
+}
+
+function currentLanguage() {
+    return languageSelect?.value || null;
+}
+
+function trackEvent(eventType, payload = {}) {
+    const metadata = {
+        page: "menu",
+        source: "public_menu",
+        ...payload.metadata,
+    };
+
+    fetch("/api/analytics/events", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        keepalive: true,
+        body: JSON.stringify({
+            restaurant_id: restaurantId,
+            event_type: eventType,
+            dish_id: payload.dishId || null,
+            language: payload.language || currentLanguage(),
+            metadata,
+        }),
+    }).catch(() => {});
+}
+
+function trackDishView(dish) {
+    if (trackedDishViews.has(dish.id)) {
+        return;
+    }
+
+    trackedDishViews.add(dish.id);
+    trackEvent("dish_view", {
+        dishId: dish.id,
+        metadata: {
+            dish_name: dish.name,
+            category_id: dish.category_id,
+        },
+    });
+}
+
+function scheduleSearchTracking(query) {
+    clearTimeout(searchTrackingTimer);
+
+    const normalizedQuery = query.trim();
+    if (normalizedQuery.length < 2) {
+        return;
+    }
+
+    searchTrackingTimer = setTimeout(() => {
+        trackEvent("search", {
+            metadata: {
+                search_query: normalizedQuery,
+            },
+        });
+    }, 450);
 }
 
 function renderCategories() {
@@ -163,6 +226,7 @@ function renderDishes() {
 
     filteredDishes.forEach((dish) => {
         dishesContainer.appendChild(buildDishCard(dish));
+        trackDishView(dish);
     });
 }
 
@@ -178,6 +242,10 @@ async function translateDish(dishId, button, output) {
     output.hidden = true;
 
     try {
+        trackEvent("translation_request", {
+            dishId,
+            language: lang,
+        });
         const response = await fetch(`/ai/translate-dish/${dishId}?lang=${encodeURIComponent(lang)}`);
         const data = await response.json();
 
@@ -211,9 +279,21 @@ function hideMenuState() {
 menuSearch?.addEventListener("input", (event) => {
     searchQuery = event.target.value;
     renderDishes();
+    scheduleSearchTracking(searchQuery);
+});
+
+languageSelect?.addEventListener("change", () => {
+    trackEvent("language_change", {
+        language: currentLanguage(),
+    });
 });
 
 showMenuState("Cargando carta...");
+trackEvent("menu_view", {
+    metadata: {
+        user_agent: navigator.userAgent,
+    },
+});
 
 if (categories.length > 0 || dishes.length > 0) {
     renderCategories();

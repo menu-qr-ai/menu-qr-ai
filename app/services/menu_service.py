@@ -26,6 +26,7 @@ def get_menu_data(db: Session, restaurant_id: int) -> dict:
     ).all()
 
     return {
+        "restaurant_id": restaurant_id,
         "restaurant_name": restaurant.name if restaurant else "Menu QR AI",
         "categories": [serialize_category(category) for category in categories],
         "dishes": [serialize_dish(dish) for dish in dishes],

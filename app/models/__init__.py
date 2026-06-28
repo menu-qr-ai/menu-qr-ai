@@ -1,3 +1,4 @@
+from app.models.analytics_event import AnalyticsEvent
 from app.models.category import Category
 from app.models.dish import Dish
 from app.models.image_generation import ImageGeneration
@@ -10,6 +11,7 @@ from app.models.user import User
 
 __all__ = [
     "Category",
+    "AnalyticsEvent",
     "Dish",
     "ImageGeneration",
     "QRCode",
