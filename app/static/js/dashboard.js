@@ -1,6 +1,8 @@
 const dashboardRoot = document.querySelector(".dashboard-shell");
 const dashboardState = document.getElementById("dashboardState");
 const dashboardMeta = document.getElementById("dashboardMeta");
+const dashboardUpdatedAt = document.getElementById("dashboardUpdatedAt");
+const demoSeedCta = document.getElementById("demoSeedCta");
 const refreshButton = document.getElementById("refreshDashboard");
 const restaurantSelect = document.getElementById("restaurantSelect");
 const rangeButtons = Array.from(document.querySelectorAll("[data-range-option]"));
@@ -182,9 +184,12 @@ function renderTopDishesChart(data) {
 
 function renderDashboard(data) {
     setKpis(data.summary);
-    dashboardMeta.textContent = `Rango: ${data.range} - Eventos: ${numberFormat(
-        data.events_by_day.reduce((total, day) => total + day.total_events, 0),
-    )}`;
+    const totalEvents = data.events_by_day.reduce((total, day) => total + day.total_events, 0);
+    dashboardMeta.textContent = `Rango: ${data.range} - Eventos: ${numberFormat(totalEvents)}`;
+    if (dashboardUpdatedAt) {
+        dashboardUpdatedAt.textContent = `Actualizado ${new Date().toLocaleString("es-ES")}`;
+    }
+    demoSeedCta.hidden = totalEvents > 0;
     renderMetricList("topDishes", data.top_dishes, "Todavia no hay platos vistos.", (dish) =>
         metricRow(dish.name, dish.views, dish.dish_id ? `ID ${dish.dish_id}` : "Sin plato asociado"),
     );

@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.core.version import APP_NAME, BUILD, VERSION
 from app.models import Category, Dish, Restaurant, Subscription, UsageLog, User
 
 logger = logging.getLogger("app.admin")
@@ -46,4 +47,5 @@ def get_admin_dashboard_data(db: Session) -> dict:
             {"label": "Base de datos", "status": "SQLite"},
             {"label": "IA", "status": "Configurada por entorno"},
         ],
+        "app_version": {"name": APP_NAME, "version": VERSION, "build": BUILD},
     }

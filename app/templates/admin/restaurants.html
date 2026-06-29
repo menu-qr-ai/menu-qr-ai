@@ -10,9 +10,24 @@
             <span>Menu QR AI</span>
         </a>
         <nav class="admin-nav" aria-label="Administracion">
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/restaurants" class="active">Restaurantes</a>
-            <a href="/admin/dashboard">Analitica</a>
+            <a href="/admin">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="8" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="15" width="7" height="6" rx="2"></rect>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/restaurants" class="active">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 21V7l8-4 8 4v14"></path><path d="M9 21v-7h6v7"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path>
+                </svg>
+                Restaurantes
+            </a>
+            <a href="/admin/dashboard">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m7 14 4-4 3 3 5-6"></path>
+                </svg>
+                Analitica
+            </a>
         </nav>
     </aside>
 
@@ -22,26 +37,68 @@
                 <p class="eyebrow">SaaS multi-restaurante</p>
                 <h1>Restaurantes</h1>
             </div>
-            <a class="admin-link" href="/menu">Ver menu</a>
+            <a class="admin-link" href="/menu">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path>
+                </svg>
+                Ver menu
+            </a>
         </header>
 
         <section class="admin-panel">
-            <div class="settings-list">
-                {% for restaurant in restaurants %}
-                    <article class="settings-row">
-                        <div>
-                            <h2>{{ restaurant.name }}</h2>
-                            <p>{{ restaurant.slug or "sin-slug" }} - {{ restaurant.city or "Ciudad no indicada" }}</p>
-                        </div>
-                        <div class="settings-actions">
-                            <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">Menu publico</a>
-                            <a class="admin-link" href="/admin/restaurants/{{ restaurant.id }}/settings">Ajustes</a>
-                        </div>
-                    </article>
-                {% else %}
-                    <p class="empty-message">Todavia no hay restaurantes.</p>
-                {% endfor %}
+            <div class="restaurant-table-wrap">
+                <table class="restaurant-table">
+                    <thead>
+                        <tr>
+                            <th>Restaurante</th>
+                            <th>Ciudad</th>
+                            <th>Idioma</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for restaurant in restaurants %}
+                            <tr>
+                                <td>
+                                    <div class="restaurant-cell">
+                                        {% if restaurant.logo_url %}
+                                            <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }}">
+                                        {% else %}
+                                            <span>{{ restaurant.name[:1] }}</span>
+                                        {% endif %}
+                                        <div>
+                                            <strong>{{ restaurant.name }}</strong>
+                                            <small>{{ restaurant.slug or "sin-slug" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ restaurant.city or "No indicada" }}</td>
+                                <td>{{ restaurant.default_language or "es" }}</td>
+                                <td>
+                                    <span class="status-badge {% if restaurant.is_active %}active{% else %}inactive{% endif %}">
+                                        {% if restaurant.is_active %}Activo{% else %}Inactivo{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="settings-actions">
+                                        <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">Menu</a>
+                                        <a class="admin-link" href="/admin/restaurants/{{ restaurant.id }}/settings">Ajustes</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="empty-message">Todavia no hay restaurantes.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
+
+        <footer class="admin-footer">
+            {{ app_version.name }} v{{ app_version.version }} - {{ app_version.build }}
+        </footer>
     </main>
 {% endblock %}

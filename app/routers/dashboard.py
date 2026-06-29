@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.version import APP_NAME, BUILD, VERSION
 from app.database import get_db
 from app.schemas.dashboard import DashboardResponse
 from app.services.dashboard_service import get_dashboard_summary
@@ -30,5 +31,10 @@ def dashboard_page(
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context={"restaurant_id": restaurant_id, "range": range or "30d", "restaurants": list_restaurants(db)},
+        context={
+            "restaurant_id": restaurant_id,
+            "range": range or "30d",
+            "restaurants": list_restaurants(db),
+            "app_version": {"name": APP_NAME, "version": VERSION, "build": BUILD},
+        },
     )

@@ -9,20 +9,53 @@
 
 {% block body %}
     <main class="dashboard-shell" data-restaurant-id="{{ restaurant_id or '' }}" data-range="{{ range or '30d' }}">
-        <header class="dashboard-header">
-            <div>
-                <p class="dashboard-eyebrow">Analytics</p>
-                <h1>Dashboard Inteligente</h1>
-                <p class="dashboard-subtitle">Centro de inteligencia basado solo en eventos reales del menu.</p>
-            </div>
-            <nav class="dashboard-actions" aria-label="Acciones del dashboard">
-                <button id="refreshDashboard" class="icon-button" type="button" title="Actualizar">R</button>
-                <a href="/admin">Admin</a>
-                <a href="/menu">Ver menu</a>
+        <aside class="dashboard-sidebar">
+            <a class="dashboard-brand" href="/admin">
+                <span>H</span>
+                <strong>HostAI</strong>
+            </a>
+            <nav aria-label="Panel">
+                <a class="active" href="/admin/dashboard">
+                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="3" width="7" height="8" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="15" width="7" height="6" rx="2"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/admin/restaurants">
+                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 21V7l8-4 8 4v14"></path><path d="M9 21v-7h6v7"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path>
+                    </svg>
+                    Restaurantes
+                </a>
+                <a href="/menu">
+                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path>
+                    </svg>
+                    Carta publica
+                </a>
             </nav>
-        </header>
+        </aside>
 
-        <section class="dashboard-toolbar" aria-label="Filtros">
+        <div class="dashboard-content">
+            <header class="dashboard-header">
+                <div>
+                    <p class="dashboard-eyebrow">Analytics</p>
+                    <h1>Hola, aqui tienes tu pulso comercial</h1>
+                    <p class="dashboard-subtitle">Datos reales de visitas, busquedas, idiomas y platos consultados.</p>
+                    <p id="dashboardUpdatedAt" class="dashboard-live">Sincronizando analytics...</p>
+                </div>
+                <nav class="dashboard-actions" aria-label="Acciones del dashboard">
+                    <button id="refreshDashboard" class="icon-button" type="button" title="Actualizar" aria-label="Actualizar dashboard">
+                        <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M21 12a9 9 0 0 1-15.5 6.2"></path><path d="M3 12a9 9 0 0 1 15.5-6.2"></path><path d="M18 3v4h-4"></path><path d="M6 21v-4h4"></path>
+                        </svg>
+                    </button>
+                    <a href="/admin">Admin</a>
+                    <a href="/menu">Ver menu</a>
+                </nav>
+            </header>
+
+            <section class="dashboard-toolbar" aria-label="Filtros">
             <div class="range-control" role="group" aria-label="Rango temporal">
                 <button type="button" data-range-option="today">Hoy</button>
                 <button type="button" data-range-option="7d">7 dias</button>
@@ -42,36 +75,51 @@
                 </select>
             </label>
             <span id="dashboardMeta" class="dashboard-badge">Datos reales</span>
-        </section>
+            </section>
 
-        <section class="kpi-grid" aria-label="Resumen">
+            <section class="kpi-grid" aria-label="Resumen">
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
                 <span>Visitas menu</span>
                 <strong data-kpi="total_menu_views">0</strong>
             </article>
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></span>
                 <span>Vistas platos</span>
                 <strong data-kpi="total_dish_views">0</strong>
             </article>
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg></span>
                 <span>Busquedas</span>
                 <strong data-kpi="total_searches">0</strong>
             </article>
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15 15 0 0 1 0 20"></path><path d="M12 2a15 15 0 0 0 0 20"></path></svg></span>
                 <span>Traducciones</span>
                 <strong data-kpi="total_translation_requests">0</strong>
             </article>
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m7 14 4-4 3 3 5-6"></path></svg></span>
                 <span>Ratio plato/menu</span>
                 <strong data-kpi="dish_view_menu_view_ratio">0</strong>
             </article>
             <article class="kpi-card">
+                <span class="kpi-icon"><svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 14.6 8.5 21 9.3 16.3 13.7 17.5 20 12 16.9 6.5 20 7.7 13.7 3 9.3 9.4 8.5 12 3Z"></path></svg></span>
                 <span>Plato mas consultado</span>
                 <strong data-kpi="top_dish_name">Sin datos</strong>
             </article>
-        </section>
+            </section>
 
         <section id="dashboardState" class="dashboard-state">Cargando datos reales...</section>
+
+        <section id="demoSeedCta" class="demo-seed-card" hidden>
+            <div>
+                <span class="dashboard-badge">Demo</span>
+                <h2>Prepara datos de demostracion</h2>
+                <p>Ejecuta el seed oficial para cargar restaurante, carta, branding y eventos analytics realistas.</p>
+            </div>
+            <code>python -m app.utils.demo_seed</code>
+        </section>
 
         <section class="dashboard-grid chart-grid" aria-label="Graficos preparados">
             <article class="dashboard-panel">
@@ -148,6 +196,11 @@
             </div>
             <div id="insights" class="insight-list"></div>
         </section>
+
+            <footer class="admin-footer">
+                {{ app_version.name }} v{{ app_version.version }} - {{ app_version.build }}
+            </footer>
+        </div>
     </main>
 {% endblock %}
 

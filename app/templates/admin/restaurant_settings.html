@@ -10,9 +10,24 @@
             <span>Menu QR AI</span>
         </a>
         <nav class="admin-nav" aria-label="Administracion">
-            <a href="/admin">Dashboard</a>
-            <a href="/admin/restaurants" class="active">Restaurantes</a>
-            <a href="/admin/dashboard?restaurant_id={{ restaurant.id }}">Analitica</a>
+            <a href="/admin">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="8" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="15" width="7" height="6" rx="2"></rect>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/restaurants" class="active">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 21V7l8-4 8 4v14"></path><path d="M9 21v-7h6v7"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path>
+                </svg>
+                Restaurantes
+            </a>
+            <a href="/admin/dashboard?restaurant_id={{ restaurant.id }}">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m7 14 4-4 3 3 5-6"></path>
+                </svg>
+                Analitica
+            </a>
         </nav>
     </aside>
 
@@ -22,59 +37,95 @@
                 <p class="eyebrow">Configuracion</p>
                 <h1>{{ restaurant.name }}</h1>
             </div>
-            <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">Ver menu publico</a>
+            <a class="admin-link" href="/r/{{ restaurant.slug }}/menu">
+                <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path>
+                </svg>
+                Ver menu publico
+            </a>
         </header>
+
+        <section class="admin-panel settings-preview">
+            {% if restaurant.cover_image_url %}
+                <img class="settings-cover" src="{{ restaurant.cover_image_url }}" alt="">
+            {% endif %}
+            <div class="settings-brand-preview">
+                {% if restaurant.logo_url %}
+                    <img src="{{ restaurant.logo_url }}" alt="{{ restaurant.name }}">
+                {% else %}
+                    <span>{{ restaurant.name[:1] }}</span>
+                {% endif %}
+                <div>
+                    <p class="eyebrow">Vista de marca</p>
+                    <h2>{{ restaurant.name }}</h2>
+                    <p>{{ restaurant.description or "Descripcion pendiente." }}</p>
+                </div>
+            </div>
+        </section>
 
         <section class="admin-panel">
             <form class="settings-form" aria-label="Ajustes del restaurante">
-                <label>
-                    <span>Nombre</span>
-                    <input value="{{ restaurant.name }}" name="name">
-                </label>
-                <label>
-                    <span>Descripcion</span>
-                    <textarea name="description">{{ restaurant.description or "" }}</textarea>
-                </label>
-                <label>
-                    <span>Logo URL</span>
-                    <input value="{{ restaurant.logo_url or '' }}" name="logo_url">
-                </label>
-                <label>
-                    <span>Cover URL</span>
-                    <input value="{{ restaurant.cover_image_url or '' }}" name="cover_image_url">
-                </label>
-                <label>
-                    <span>Color principal</span>
-                    <input value="{{ restaurant.primary_color or '' }}" name="primary_color" placeholder="#2563eb">
-                </label>
-                <label>
-                    <span>Color acento</span>
-                    <input value="{{ restaurant.accent_color or '' }}" name="accent_color" placeholder="#0f766e">
-                </label>
-                <label>
-                    <span>Idioma por defecto</span>
-                    <input value="{{ restaurant.default_language or 'es' }}" name="default_language">
-                </label>
-                <label>
-                    <span>Moneda</span>
-                    <input value="{{ restaurant.currency or 'EUR' }}" name="currency">
-                </label>
-                <label>
-                    <span>Email</span>
-                    <input value="{{ restaurant.email or '' }}" name="email">
-                </label>
-                <label>
-                    <span>Telefono</span>
-                    <input value="{{ restaurant.phone or '' }}" name="phone">
-                </label>
-                <label class="settings-wide">
-                    <span>Direccion</span>
-                    <input value="{{ restaurant.address or '' }}" name="address">
-                </label>
+                <fieldset>
+                    <legend>Identidad</legend>
+                    <label>
+                        <span>Nombre</span>
+                        <input value="{{ restaurant.name }}" name="name">
+                    </label>
+                    <label class="settings-wide">
+                        <span>Descripcion</span>
+                        <textarea name="description">{{ restaurant.description or "" }}</textarea>
+                    </label>
+                </fieldset>
+                <fieldset>
+                    <legend>Marca</legend>
+                    <label>
+                        <span>Logo URL</span>
+                        <input value="{{ restaurant.logo_url or '' }}" name="logo_url">
+                    </label>
+                    <label>
+                        <span>Cover URL</span>
+                        <input value="{{ restaurant.cover_image_url or '' }}" name="cover_image_url">
+                    </label>
+                    <label>
+                        <span>Color principal</span>
+                        <input value="{{ restaurant.primary_color or '' }}" name="primary_color" placeholder="#425A3D">
+                    </label>
+                    <label>
+                        <span>Color acento</span>
+                        <input value="{{ restaurant.accent_color or '' }}" name="accent_color" placeholder="#D9A441">
+                    </label>
+                </fieldset>
+                <fieldset>
+                    <legend>Operacion</legend>
+                    <label>
+                        <span>Idioma por defecto</span>
+                        <input value="{{ restaurant.default_language or 'es' }}" name="default_language">
+                    </label>
+                    <label>
+                        <span>Moneda</span>
+                        <input value="{{ restaurant.currency or 'EUR' }}" name="currency">
+                    </label>
+                    <label>
+                        <span>Email</span>
+                        <input value="{{ restaurant.email or '' }}" name="email">
+                    </label>
+                    <label>
+                        <span>Telefono</span>
+                        <input value="{{ restaurant.phone or '' }}" name="phone">
+                    </label>
+                    <label class="settings-wide">
+                        <span>Direccion</span>
+                        <input value="{{ restaurant.address or '' }}" name="address">
+                    </label>
+                </fieldset>
             </form>
             <p class="settings-note">
                 API preparada: PATCH /api/restaurants/{{ restaurant.id }}. La autenticacion y guardado visual llegan en un sprint posterior.
             </p>
         </section>
+
+        <footer class="admin-footer">
+            {{ app_version.name }} v{{ app_version.version }} - {{ app_version.build }}
+        </footer>
     </main>
 {% endblock %}

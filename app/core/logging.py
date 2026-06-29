@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response
 
 from app.core.config import settings
+from app.core.version import APP_NAME, BUILD, VERSION
 
 
 def configure_logging() -> None:
@@ -15,6 +16,7 @@ def configure_logging() -> None:
         handlers=[logging.StreamHandler(sys.stdout)],
         force=True,
     )
+    logging.getLogger("app.startup").info("app_configured name=%s version=%s build=%s", APP_NAME, VERSION, BUILD)
 
 
 async def log_request_middleware(
@@ -34,4 +36,3 @@ async def log_request_middleware(
     )
     response.headers["X-Response-Time-Ms"] = str(duration_ms)
     return response
-

@@ -4,12 +4,13 @@ import unittest
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete
+from sqlalchemy import create_engine, delete, func, select
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app
 from app.models import AnalyticsEvent, Category, Dish, Restaurant
+from app.utils.demo_seed import DEMO_SLUG, seed_demo_database
 
 
 class AppSmokeTests(unittest.TestCase):
@@ -76,6 +77,59 @@ class AppSmokeTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["database"], "ok")
+        self.assertIn("version", response.json())
+        self.assertIn("analytics", response.json())
+        self.assertIn("restaurants", response.json())
+
+    def test_demo_seed_is_idempotent(self):
+        with self.SessionTesting() as db:
+            first = seed_demo_database(db)
+            first_counts = {
+                "restaurants": db.scalar(select(func.count()).select_from(Restaurant)),
+                "categories": db.scalar(select(func.count()).select_from(Category)),
+                "dishes": db.scalar(select(func.count()).select_from(Dish)),
+                "events": db.scalar(select(func.count()).select_from(AnalyticsEvent)),
+            }
+            second = seed_demo_database(db)
+            second_counts = {
+                "restaurants": db.scalar(select(func.count()).select_from(Restaurant)),
+                "categories": db.scalar(select(func.count()).select_from(Category)),
+                "dishes": db.scalar(select(func.count()).select_from(Dish)),
+                "events": db.scalar(select(func.count()).select_from(AnalyticsEvent)),
+            }
+
+        self.assertEqual(first["slug"], DEMO_SLUG)
+        self.assertEqual(second["slug"], DEMO_SLUG)
+        self.assertEqual(first_counts, second_counts)
+
+    def test_demo_seed_creates_demo_restaurant(self):
+        with self.SessionTesting() as db:
+            seed_demo_database(db)
+            restaurant = db.scalar(select(Restaurant).where(Restaurant.slug == DEMO_SLUG))
+
+        self.assertIsNotNone(restaurant)
+        self.assertEqual(restaurant.name, "Demo Restaurant")
+        self.assertTrue(restaurant.is_active)
+
+    def test_demo_seed_public_slug_is_accessible(self):
+        with self.SessionTesting() as db:
+            seed_demo_database(db)
+
+        with TestClient(app) as client:
+            response = client.get(f"/r/{DEMO_SLUG}/menu")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Demo Restaurant", response.text)
+
+    def test_dashboard_responds_after_demo_seed(self):
+        with self.SessionTesting() as db:
+            result = seed_demo_database(db)
+
+        with TestClient(app) as client:
+            response = client.get(f"/api/dashboard/summary?restaurant_id={result['restaurant_id']}&range=30d")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(response.json()["summary"]["total_menu_views"], 0)
 
     def test_api_root_exposes_environment(self):
         with TestClient(app) as client:

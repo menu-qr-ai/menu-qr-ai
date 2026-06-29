@@ -149,6 +149,29 @@ function buildMetaItem(label, value) {
     return item;
 }
 
+function buildAllergenBadges(value) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "allergen-group";
+    const title = document.createElement("strong");
+    title.textContent = "Alergenos";
+    wrapper.appendChild(title);
+
+    const allergens = String(value || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    if (!allergens.length) {
+        wrapper.appendChild(createTextElement("span", "allergen-badge empty", "No indicado"));
+        return wrapper;
+    }
+
+    allergens.forEach((allergen) => {
+        wrapper.appendChild(createTextElement("span", "allergen-badge", allergen));
+    });
+    return wrapper;
+}
+
 function buildDishImage(dish) {
     const media = document.createElement("div");
     media.className = "dish-media";
@@ -189,7 +212,7 @@ function buildDishCard(dish) {
     meta.className = "dish-meta";
     meta.append(
         buildMetaItem("Ingredientes", dish.ingredients),
-        buildMetaItem("Alergenos", dish.allergens),
+        buildAllergenBadges(dish.allergens),
     );
 
     const output = createTextElement("p", "translation-output", "");
