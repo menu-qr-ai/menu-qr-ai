@@ -24,10 +24,10 @@ function formatPrice(price) {
 
 function applyRestaurantBranding() {
     if (restaurant.primary_color) {
-        document.documentElement.style.setProperty("--accent", restaurant.primary_color);
+        document.documentElement.style.setProperty("--restaurant-primary", restaurant.primary_color);
     }
     if (restaurant.accent_color) {
-        document.documentElement.style.setProperty("--teal", restaurant.accent_color);
+        document.documentElement.style.setProperty("--restaurant-accent", restaurant.accent_color);
     }
     if (languageSelect && restaurant.default_language) {
         languageSelect.value = restaurant.default_language;

@@ -39,6 +39,14 @@
             {% endif %}
             <div class="hero-overlay"></div>
             <div class="hero-copy">
+                <div class="hero-identity">
+                    {% if restaurant.logo_url %}
+                        <img src="{{ restaurant.logo_url }}" alt="{{ restaurant_name }}">
+                    {% else %}
+                        <span>{{ restaurant_name[:1] }}</span>
+                    {% endif %}
+                    <strong>{{ restaurant_name }}</strong>
+                </div>
                 <p class="eyebrow">Carta digital inteligente</p>
                 <h1>{{ restaurant_name }}</h1>
                 <p class="hero-text">
@@ -132,5 +140,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="{{ url_for('static', path='js/app.js') }}"></script>
+    <script src="{{ url_for('static', path='js/app.js') }}?v=6.3.1"></script>
 {% endblock %}
