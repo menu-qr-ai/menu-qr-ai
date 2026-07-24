@@ -4,6 +4,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette import status
 
+from app.core.logging import redact_capability_path
+
 
 logger = logging.getLogger("app.exceptions")
 
@@ -15,20 +17,23 @@ class AppError(Exception):
         *,
         status_code: int = status.HTTP_400_BAD_REQUEST,
         code: str = "app_error",
+        headers: dict[str, str] | None = None,
     ) -> None:
         self.message = message
         self.status_code = status_code
         self.code = code
+        self.headers = headers
 
 
 def _error_response(request: Request, status_code: int, code: str, message: str) -> JSONResponse:
+    safe_path = redact_capability_path(request.url.path)
     return JSONResponse(
         status_code=status_code,
         content={
             "error": {
                 "code": code,
                 "message": message,
-                "path": request.url.path,
+                "path": safe_path,
             }
         },
     )
@@ -40,18 +45,29 @@ def register_exception_handlers(app: FastAPI) -> None:
         logger.warning(
             "app_error code=%s path=%s message=%s",
             exc.code,
-            request.url.path,
+            redact_capability_path(request.url.path),
             exc.message,
         )
-        return _error_response(request, exc.status_code, exc.code, exc.message)
+        response = _error_response(
+            request,
+            exc.status_code,
+            exc.code,
+            exc.message,
+        )
+        if exc.headers:
+            response.headers.update(exc.headers)
+        return response
 
     @app.exception_handler(Exception)
     async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("unexpected_error path=%s", request.url.path, exc_info=exc)
+        logger.exception(
+            "unexpected_error path=%s",
+            redact_capability_path(request.url.path),
+            exc_info=exc,
+        )
         return _error_response(
             request,
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             "internal_server_error",
             "No se pudo completar la operacion.",
         )
-

@@ -1,4 +1,5 @@
 import logging
+import re
 import sys
 import time
 from collections.abc import Awaitable, Callable
@@ -7,6 +8,11 @@ from fastapi import Request, Response
 
 from app.core.config import settings
 from app.core.version import APP_NAME, BUILD, VERSION
+
+
+_CAPABILITY_TOKEN_PATH = re.compile(
+    r"^(/(?:menu/(?:table|session)|api/customer/sessions)/)[^/]+"
+)
 
 
 def configure_logging() -> None:
@@ -27,12 +33,23 @@ async def log_request_middleware(
     started_at = time.perf_counter()
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+    client_ip = (
+        request.client.host
+        if request.client is not None
+        else "unknown"
+    )
     logger.info(
-        "request_completed method=%s path=%s status=%s duration_ms=%s",
+        "request_completed method=%s path=%s status=%s "
+        "duration_ms=%s client_ip=%s",
         request.method,
-        request.url.path,
+        redact_capability_path(request.url.path),
         response.status_code,
         duration_ms,
+        client_ip,
     )
     response.headers["X-Response-Time-Ms"] = str(duration_ms)
     return response
+
+
+def redact_capability_path(path: str) -> str:
+    return _CAPABILITY_TOKEN_PATH.sub(r"\1[token]", path)

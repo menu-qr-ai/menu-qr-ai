@@ -10,3 +10,4 @@ class QRCodeRead(ORMModel):
     image_path: str | None = None
     status: str
     created_at: datetime
+    updated_at: datetime

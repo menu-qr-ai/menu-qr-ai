@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.core.exceptions import AppError
-from app.models import AnalyticsEvent
+from app.models import AnalyticsEvent, Dish, Restaurant
 from app.schemas.analytics import AnalyticsEventCreate
 
 
@@ -19,6 +19,7 @@ ALLOWED_ANALYTICS_EVENTS = {
     "search",
     "ai_query",
     "translation_request",
+    "sale_processed",
 }
 
 
@@ -61,7 +62,28 @@ def _validate_event_type(event_type: str) -> str:
     return normalized
 
 
-def create_event(db: Session, payload: AnalyticsEventCreate) -> dict[str, Any]:
+def create_event_record(db: Session, payload: AnalyticsEventCreate) -> AnalyticsEvent:
+    if payload.restaurant_id is not None:
+        restaurant = db.get(Restaurant, payload.restaurant_id)
+        if restaurant is None or not restaurant.is_active:
+            raise AppError(
+                "Restaurante no encontrado.",
+                status_code=status.HTTP_404_NOT_FOUND,
+                code="restaurant_not_found",
+            )
+    if payload.dish_id is not None:
+        dish = db.scalar(
+            select(Dish).where(
+                Dish.id == payload.dish_id,
+                Dish.restaurant_id == payload.restaurant_id,
+            )
+        )
+        if dish is None:
+            raise AppError(
+                "Plato no encontrado para este restaurante.",
+                status_code=status.HTTP_404_NOT_FOUND,
+                code="dish_not_found",
+            )
     event = AnalyticsEvent(
         restaurant_id=payload.restaurant_id,
         event_type=_validate_event_type(payload.event_type),
@@ -71,6 +93,13 @@ def create_event(db: Session, payload: AnalyticsEventCreate) -> dict[str, Any]:
         created_at=datetime.utcnow(),
     )
     db.add(event)
+    db.flush()
+    db.refresh(event)
+    return event
+
+
+def create_event(db: Session, payload: AnalyticsEventCreate) -> dict[str, Any]:
+    event = create_event_record(db, payload)
     db.commit()
     db.refresh(event)
     return event_to_dict(event)

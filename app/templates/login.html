@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Acceso | HostAI{% endblock %}
+{% block body_class %}access-page{% endblock %}
+
+{% block body %}
+<main class="access-shell">
+    <section class="access-brand-panel" aria-label="HostAI">
+        <a class="access-brand" href="/r/demo/menu">
+            <span class="access-brand-mark">H</span>
+            <span>HostAI</span>
+        </a>
+        <div>
+            <p class="access-eyebrow">Restaurant Operating System</p>
+            <h1>Tu local, listo para operar.</h1>
+            <p>Una entrada sencilla para sala, cocina y gestión. Cada persona ve solo lo que necesita.</p>
+        </div>
+        <p class="access-secure-note">Acceso aislado por restaurante</p>
+    </section>
+
+    <section class="access-form-panel">
+        <div class="access-form-wrap">
+            <p class="access-eyebrow">Bienvenido</p>
+            <h2>Inicia sesión</h2>
+            <p class="access-muted">Usa las credenciales asignadas por tu restaurante.</p>
+
+            {% if error %}
+                <div class="access-alert" role="alert">{{ error }}</div>
+            {% endif %}
+
+            <form class="access-form" method="post" action="/login">
+                {% include "_csrf.html" %}
+                {% if next_url %}
+                    <input type="hidden" name="next" value="{{ next_url }}">
+                {% endif %}
+                <label>
+                    <span>Email</span>
+                    <input
+                        type="email"
+                        name="email"
+                        autocomplete="username"
+                        inputmode="email"
+                        required
+                        autofocus
+                    >
+                </label>
+                <label>
+                    <span>Contraseña</span>
+                    <input
+                        type="password"
+                        name="password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </label>
+                <button type="submit">Entrar en HostAI</button>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock %}

@@ -39,7 +39,11 @@ def get_restaurant(db: Session, restaurant_id: int) -> Restaurant | None:
 
 
 def get_restaurant_by_slug(db: Session, slug: str) -> Restaurant | None:
-    return db.scalar(select(Restaurant).where(Restaurant.slug == slugify(slug)))
+    normalized_slug = slugify(slug)
+    restaurant = db.scalar(select(Restaurant).where(Restaurant.slug == normalized_slug))
+    if restaurant is None and normalized_slug == "demo":
+        return db.scalar(select(Restaurant).where(Restaurant.slug == "demo-restaurant"))
+    return restaurant
 
 
 def get_default_restaurant(db: Session) -> Restaurant | None:
@@ -60,12 +64,19 @@ def require_restaurant(db: Session, restaurant_id: int) -> Restaurant:
     return restaurant
 
 
-def create_restaurant(db: Session, payload: RestaurantCreate) -> Restaurant:
+def create_restaurant_record(db: Session, payload: RestaurantCreate) -> Restaurant:
     data = payload.model_dump()
     data["slug"] = _ensure_unique_slug(db, data.get("slug") or data["name"])
     now = datetime.utcnow()
     restaurant = Restaurant(**data, created_at=now, updated_at=now)
     db.add(restaurant)
+    db.flush()
+    db.refresh(restaurant)
+    return restaurant
+
+
+def create_restaurant(db: Session, payload: RestaurantCreate) -> Restaurant:
+    restaurant = create_restaurant_record(db, payload)
     db.commit()
     db.refresh(restaurant)
     return restaurant

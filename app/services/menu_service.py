@@ -61,6 +61,7 @@ def get_menu_data(db: Session, restaurant_id: int) -> dict:
 
     return {
         "restaurant_id": restaurant_id,
+        "public_menu_url": f"/r/{restaurant.slug}/menu" if restaurant and restaurant.slug else "/menu",
         "restaurant_name": restaurant.name if restaurant else "Menu QR AI",
         "restaurant": _serialize_restaurant_public(restaurant, restaurant_id),
         "categories": [serialize_category(category) for category in categories],

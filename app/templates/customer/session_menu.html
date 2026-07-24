@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Pedir · {{ customer_state.restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}customer-ordering-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/customer.css') }}?v=35.0">
+{% endblock %}
+
+{% block body %}
+<main class="customer-shell" data-customer-menu>
+    <header class="customer-header">
+        <div class="customer-brand">
+            {% if customer_state.restaurant.logo_url %}
+                <img src="{{ customer_state.restaurant.logo_url }}" alt="">
+            {% else %}
+                <span>{{ customer_state.restaurant.name[:1] }}</span>
+            {% endif %}
+            <div>
+                <p>Mesa {{ customer_state.table_code }}</p>
+                <h1>{{ customer_state.restaurant.name }}</h1>
+            </div>
+        </div>
+        <span class="customer-session-badge">Pedido en mesa</span>
+    </header>
+
+    <section class="customer-intro">
+        <p class="customer-eyebrow">Carta y pedido</p>
+        <h2>¿Qué te apetece?</h2>
+        <p>Prepara tu selección. El camarero la revisará antes de enviarla a cocina.</p>
+    </section>
+
+    <div id="customerAlert" class="customer-alert" role="status" aria-live="polite" hidden></div>
+
+    <section class="customer-tools" aria-label="Buscar y filtrar carta">
+        <label>
+            <span class="sr-only">Buscar platos</span>
+            <input id="customerSearch" type="search" placeholder="Buscar plato o alérgeno…" autocomplete="off">
+        </label>
+        <nav id="customerCategories" class="customer-categories" aria-label="Categorías"></nav>
+    </section>
+
+    <section id="customerDishes" class="customer-dishes" aria-label="Platos"></section>
+
+    <aside class="customer-cart" aria-labelledby="customerCartTitle">
+        <div class="customer-cart-heading">
+            <div>
+                <p class="customer-eyebrow">Tu selección</p>
+                <h2 id="customerCartTitle">Pedido</h2>
+            </div>
+            <span id="customerOrderStatus" class="customer-status">Nuevo</span>
+        </div>
+        <div id="customerOrderLines" class="customer-order-lines"></div>
+        <div class="customer-total">
+            <span id="customerTotalUnits">0 platos</span>
+            <strong id="customerTotalAmount">0,00 €</strong>
+        </div>
+        <button id="customerSubmitOrder" class="customer-primary" type="button" disabled>
+            Enviar al camarero
+        </button>
+        <p class="customer-review-note">
+            No se enviará nada a cocina hasta que el camarero lo acepte.
+        </p>
+    </aside>
+</main>
+
+<script id="customerBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">
+    {{ {"sessionToken": customer_session_token, "state": customer_state} | tojson }}
+</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/customer.js') }}?v=35.1" defer></script>
+{% endblock %}

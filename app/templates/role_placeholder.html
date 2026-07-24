@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ area }} | HostAI{% endblock %}
+{% block body_class %}access-page{% endblock %}
+
+{% block body %}
+<main class="role-shell">
+    {% include "_active_context.html" %}
+
+    <section class="role-hero">
+        <p class="access-eyebrow">{{ area }} · {{ restaurant.name }}</p>
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+        <div class="role-status">
+            <span class="active-context-dot" aria-hidden="true"></span>
+            Acceso {{ current_membership.role }} activo
+        </div>
+    </section>
+
+    <section class="role-preview-grid" aria-label="Próximas funciones">
+        <article>
+            <span>01</span>
+            <h2>Contexto seguro</h2>
+            <p>Todas las acciones quedan vinculadas al local activo y a tu rol.</p>
+        </article>
+        <article>
+            <span>02</span>
+            <h2>Uso táctil</h2>
+            <p>La navegación está preparada para móvil y tablet, con acciones grandes y claras.</p>
+        </article>
+    </section>
+</main>
+{% endblock %}

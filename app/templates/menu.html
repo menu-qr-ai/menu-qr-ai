@@ -5,7 +5,7 @@
 {% block body %}
     <header id="top" class="site-header">
         <nav class="nav-bar" aria-label="Navegacion principal">
-            <a class="brand" href="/menu">
+            <a class="brand" href="{{ public_menu_url }}">
                 {% if restaurant.logo_url %}
                     <img class="brand-logo" src="{{ restaurant.logo_url }}" alt="{{ restaurant_name }}">
                 {% else %}
@@ -129,7 +129,7 @@
         </a>
     </nav>
 
-    <script>
+    <script nonce="{{ csp_nonce(request) }}">
         window.menuData = {
             restaurantId: {{ restaurant_id | tojson }},
             restaurant: {{ restaurant | tojson }},

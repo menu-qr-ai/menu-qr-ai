@@ -1,0 +1,17 @@
+<section class="active-context" aria-label="Contexto activo">
+    <div class="active-context-copy">
+        <span class="active-context-dot" aria-hidden="true"></span>
+        <div>
+            <small>Local activo</small>
+            <strong>{{ current_membership.restaurant.name }}</strong>
+        </div>
+        <span class="role-chip">{{ current_membership.role }}</span>
+    </div>
+    <div class="active-context-actions">
+        <a href="/app/restaurants">Cambiar local</a>
+        <form method="post" action="/logout">
+            {% include "_csrf.html" %}
+            <button type="submit">Salir</button>
+        </form>
+    </div>
+</section>

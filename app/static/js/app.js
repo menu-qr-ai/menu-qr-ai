@@ -15,10 +15,14 @@ let searchTrackingTimer = null;
 
 const trackedDishViews = new Set();
 
+const hasMenuShell = Boolean(categoriesContainer && dishesContainer);
+
 function formatPrice(price) {
     return new Intl.NumberFormat("es-ES", {
         style: "currency",
         currency: restaurant.currency || "EUR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(Number(price || 0));
 }
 
@@ -54,7 +58,7 @@ function trackEvent(eventType, payload = {}) {
         ...payload.metadata,
     };
 
-    fetch("/api/analytics/events", {
+    window.HostAISecurity.fetch("/api/analytics/events", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -103,6 +107,9 @@ function scheduleSearchTracking(query) {
 }
 
 function renderCategories() {
+    if (!categoriesContainer) {
+        return;
+    }
     categoriesContainer.replaceChildren();
 
     const allButton = document.createElement("button");
@@ -240,6 +247,9 @@ function buildDishCard(dish) {
 }
 
 function renderDishes() {
+    if (!dishesContainer) {
+        return;
+    }
     dishesContainer.replaceChildren();
     hideMenuState();
 
@@ -282,7 +292,7 @@ async function translateDish(dishId, button, output) {
             dishId,
             language: lang,
         });
-        const response = await fetch(`/ai/translate-dish/${dishId}?lang=${encodeURIComponent(lang)}`);
+        const response = await window.HostAISecurity.fetch(`/ai/translate-dish/${dishId}?lang=${encodeURIComponent(lang)}`);
         const data = await response.json();
 
         if (!response.ok || data.error) {
@@ -303,11 +313,17 @@ async function translateDish(dishId, button, output) {
 }
 
 function showMenuState(message) {
+    if (!menuState) {
+        return;
+    }
     menuState.textContent = message;
     menuState.hidden = false;
 }
 
 function hideMenuState() {
+    if (!menuState) {
+        return;
+    }
     menuState.textContent = "";
     menuState.hidden = true;
 }
@@ -324,19 +340,21 @@ languageSelect?.addEventListener("change", () => {
     });
 });
 
-applyRestaurantBranding();
-showMenuState("Cargando carta...");
-trackEvent("menu_view", {
-    metadata: {
-        user_agent: navigator.userAgent,
-    },
-});
+if (hasMenuShell) {
+    applyRestaurantBranding();
+    showMenuState("Cargando carta...");
+    trackEvent("menu_view", {
+        metadata: {
+            user_agent: navigator.userAgent,
+        },
+    });
 
-if (categories.length > 0 || dishes.length > 0) {
-    renderCategories();
-    renderDishes();
-} else {
-    categoriesContainer.appendChild(createTextElement("p", "empty-message", "No hay categorias disponibles."));
-    dishesContainer.replaceChildren();
-    showMenuState("Este restaurante aun no tiene platos publicados.");
+    if (categories.length > 0 || dishes.length > 0) {
+        renderCategories();
+        renderDishes();
+    } else {
+        categoriesContainer.appendChild(createTextElement("p", "empty-message", "No hay categorias disponibles."));
+        dishesContainer.replaceChildren();
+        showMenuState("Este restaurante aun no tiene platos publicados.");
+    }
 }

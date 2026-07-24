@@ -24,7 +24,30 @@ def _slugify(value: str) -> str:
     return slug or "restaurant"
 
 
+def _widen_alembic_revision_column() -> None:
+    # Alembic defaults version_num to VARCHAR(32), while this revision and
+    # several later historical identifiers are longer. SQLite does not enforce
+    # that limit, but PostgreSQL does, so widen it before Alembic records 0003.
+    if op.get_context().dialect.name == "sqlite":
+        with op.batch_alter_table("alembic_version") as batch_op:
+            batch_op.alter_column(
+                "version_num",
+                existing_type=sa.String(length=32),
+                type_=sa.String(length=255),
+                existing_nullable=False,
+            )
+        return
+    op.alter_column(
+        "alembic_version",
+        "version_num",
+        existing_type=sa.String(length=32),
+        type_=sa.String(length=255),
+        existing_nullable=False,
+    )
+
+
 def upgrade() -> None:
+    _widen_alembic_revision_column()
     op.add_column("restaurants", sa.Column("slug", sa.String(), nullable=True))
     op.add_column("restaurants", sa.Column("description", sa.Text(), nullable=True))
     op.add_column("restaurants", sa.Column("logo_url", sa.String(), nullable=True))

@@ -15,6 +15,57 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # The menu core predates Alembic and was originally created with
+    # Base.metadata.create_all(). Keeping its explicit DDL in the first revision
+    # makes Alembic the schema source of truth for fresh installations. Existing
+    # versioned databases do not re-run this already-applied revision.
+    op.create_table(
+        "restaurants",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("name", sa.String(), nullable=False),
+    )
+    op.create_index("ix_restaurants_id", "restaurants", ["id"])
+
+    op.create_table(
+        "categories",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column(
+            "restaurant_id",
+            sa.Integer(),
+            sa.ForeignKey("restaurants.id"),
+            nullable=False,
+        ),
+    )
+    op.create_index("ix_categories_id", "categories", ["id"])
+    op.create_index("ix_categories_restaurant_id", "categories", ["restaurant_id"])
+
+    op.create_table(
+        "dishes",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("price", sa.Float(), nullable=True),
+        sa.Column("ingredients", sa.Text(), nullable=True),
+        sa.Column("allergens", sa.Text(), nullable=True),
+        sa.Column("image", sa.String(), nullable=True),
+        sa.Column(
+            "category_id",
+            sa.Integer(),
+            sa.ForeignKey("categories.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "restaurant_id",
+            sa.Integer(),
+            sa.ForeignKey("restaurants.id"),
+            nullable=False,
+        ),
+    )
+    op.create_index("ix_dishes_id", "dishes", ["id"])
+    op.create_index("ix_dishes_category_id", "dishes", ["category_id"])
+    op.create_index("ix_dishes_restaurant_id", "dishes", ["restaurant_id"])
+
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -102,3 +153,6 @@ def downgrade() -> None:
     op.drop_table("translations")
     op.drop_table("subscriptions")
     op.drop_table("users")
+    op.drop_table("dishes")
+    op.drop_table("categories")
+    op.drop_table("restaurants")

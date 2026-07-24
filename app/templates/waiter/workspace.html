@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Sala · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}waiter-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/waiter.css') }}?v=32.0">
+{% endblock %}
+
+{% block body %}
+<main class="waiter-shell" data-waiter-workspace>
+    {% include "_active_context.html" %}
+
+    <header class="waiter-header">
+        <div>
+            <p class="waiter-eyebrow">Operativa de sala</p>
+            <h1>Mesas</h1>
+            <p>Abre una mesa, toma la comanda y confirma cada ronda.</p>
+        </div>
+        <div class="room-totals" aria-label="Estado de sala">
+            <span><strong id="freeTableCount">{{ room.free_tables }}</strong> libres</span>
+            <span><strong id="occupiedTableCount">{{ room.occupied_tables }}</strong> ocupadas</span>
+        </div>
+    </header>
+
+    <div id="waiterAlert" class="waiter-alert" role="status" aria-live="polite" hidden></div>
+
+    <nav class="zone-filter" aria-label="Filtrar mesas por zona">
+        <button type="button" class="is-active" data-zone-filter="all">Todas</button>
+        {% for zone in room.zones %}
+            {% if zone.is_active %}
+                <button type="button" data-zone-filter="{{ zone.id }}">{{ zone.name }}</button>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    <section id="roomGrid" class="room-grid" aria-label="Mesas del restaurante">
+        {% for item in room.tables %}
+            <article
+                class="table-card {% if item.is_occupied %}is-occupied{% else %}is-free{% endif %}"
+                data-table-card
+                data-table-id="{{ item.table.id }}"
+                data-zone-id="{{ item.table.zone_id or 'none' }}"
+            >
+                <div class="table-card-top">
+                    <div>
+                        <span class="table-status">
+                            {% if item.is_occupied %}Ocupada{% else %}Libre{% endif %}
+                        </span>
+                        <h2>{{ item.table.code }}</h2>
+                    </div>
+                    <span class="table-capacity" aria-label="Capacidad">
+                        {{ item.table.capacity }} pax
+                    </span>
+                </div>
+
+                {% if item.is_occupied %}
+                    <div class="table-session-meta">
+                        <span>{{ item.current_session.guest_count or "—" }} comensales</span>
+                        <span data-opened-at="{{ item.current_session.opened_at }}">Calculando tiempo…</span>
+                        <span>{{ item.active_order_count }} pedidos activos</span>
+                    </div>
+                    <button
+                        type="button"
+                        class="primary-touch-button"
+                        data-open-session="{{ item.current_session.id }}"
+                        data-table-code="{{ item.table.code }}"
+                    >
+                        Abrir sesión
+                    </button>
+                {% else %}
+                    <form class="open-table-form" data-open-table="{{ item.table.id }}">
+                        <label>
+                            <span>Comensales</span>
+                            <input name="guest_count" type="number" min="1" inputmode="numeric" value="2" required>
+                        </label>
+                        <label>
+                            <span>Nota opcional</span>
+                            <input name="note" type="text" maxlength="1000" placeholder="Trona, celebración…">
+                        </label>
+                        <button type="submit" class="primary-touch-button">Abrir mesa</button>
+                    </form>
+                {% endif %}
+            </article>
+        {% else %}
+            <div class="waiter-empty">
+                <h2>No hay mesas activas</h2>
+                <p>Un owner o manager puede configurarlas desde la API de sala.</p>
+            </div>
+        {% endfor %}
+    </section>
+
+    <section id="sessionWorkspace" class="session-workspace" aria-label="Sesión de mesa" hidden>
+        <header class="session-header">
+            <button id="closeSessionWorkspace" class="back-touch-button" type="button">← Sala</button>
+            <div>
+                <p id="sessionEyebrow" class="waiter-eyebrow">Sesión activa</p>
+                <h2 id="sessionTitle">Mesa</h2>
+                <p id="sessionMeta"></p>
+            </div>
+        </header>
+
+        <div class="session-layout">
+            <section class="menu-picker" aria-labelledby="menuPickerTitle">
+                <div class="section-title">
+                    <div>
+                        <p class="waiter-eyebrow">Carta actual</p>
+                        <h3 id="menuPickerTitle">Añadir platos</h3>
+                    </div>
+                    <label class="dish-search">
+                        <span class="sr-only">Buscar platos</span>
+                        <input id="dishSearch" type="search" placeholder="Buscar plato…" autocomplete="off">
+                    </label>
+                </div>
+                <div id="dishPicker" class="dish-picker"></div>
+            </section>
+
+            <aside class="order-panel" aria-labelledby="orderPanelTitle">
+                <div class="section-title">
+                    <div>
+                        <p class="waiter-eyebrow">Rondas</p>
+                        <h3 id="orderPanelTitle">Pedidos</h3>
+                    </div>
+                    <button id="newOrderButton" class="secondary-touch-button" type="button">
+                        Nueva ronda
+                    </button>
+                </div>
+                <div id="orderList" class="order-list"></div>
+                <div class="session-actions">
+                    <button id="settleSessionButton" class="primary-touch-button" type="button" hidden>
+                        Cerrar cuenta
+                    </button>
+                    <button id="cancelTableButton" class="danger-touch-button" type="button">
+                        Cancelar sesión
+                    </button>
+                </div>
+            </aside>
+        </div>
+
+        <section id="paymentPanel" class="payment-panel" aria-labelledby="paymentPanelTitle" hidden>
+            <div class="section-title">
+                <div>
+                    <p class="waiter-eyebrow">Settlement finalizado</p>
+                    <h3 id="paymentPanelTitle">Pagos registrados</h3>
+                </div>
+                <span id="paymentStatus" class="status-chip">Pendiente</span>
+            </div>
+
+            <div class="payment-balance" aria-label="Balance del settlement">
+                <div><span>Total</span><strong id="paymentTotal">0,00</strong></div>
+                <div><span>Pagado</span><strong id="paymentPaid">0,00</strong></div>
+                <div><span>Pendiente</span><strong id="paymentRemaining">0,00</strong></div>
+            </div>
+
+            <form id="paymentForm" class="payment-form">
+                <label>
+                    <span>Importe</span>
+                    <input id="paymentAmount" name="amount" type="text" inputmode="decimal" autocomplete="off" required>
+                </label>
+                <label>
+                    <span>Método</span>
+                    <select id="paymentMethod" name="method">
+                        <option value="cash">Efectivo</option>
+                        <option value="card">Tarjeta registrada manualmente</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </label>
+                <label class="payment-reference">
+                    <span>Referencia opcional</span>
+                    <input id="paymentReference" name="reference" type="text" maxlength="128" autocomplete="off">
+                </label>
+                <button id="registerPaymentButton" class="primary-touch-button" type="submit">
+                    Registrar pago
+                </button>
+            </form>
+
+            <div id="paymentHistory" class="payment-history"></div>
+        </section>
+    </section>
+</main>
+
+<script id="waiterBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ waiter_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/waiter.js') }}?v=35.0" defer></script>
+{% endblock %}

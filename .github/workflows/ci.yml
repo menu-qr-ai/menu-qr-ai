@@ -7,6 +7,22 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: hostai_runtime_test
+          POSTGRES_USER: hostai
+          POSTGRES_PASSWORD: hostai-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hostai -d hostai_runtime_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      HOSTAI_TEST_POSTGRES_URL: postgresql+psycopg2://hostai:hostai-ci-only@127.0.0.1:5432/hostai_runtime_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,8 +33,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Validate imports
-        run: python -m compileall app tests
+        run: python -m compileall app tests scripts
       - name: Lint
-        run: ruff check app tests
+        run: ruff check .
       - name: Tests
         run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80

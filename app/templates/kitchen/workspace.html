@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Cocina · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}kitchen-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/kitchen.css') }}?v=34.0">
+{% endblock %}
+
+{% block body %}
+<main class="kitchen-shell" data-kitchen-workspace>
+    {% include "_active_context.html" %}
+
+    <header class="kitchen-header">
+        <div>
+            <p class="kitchen-eyebrow">Producción en curso</p>
+            <h1>Cocina</h1>
+            <p>Comandas confirmadas por sala, sin mezclar ventas ni inventario.</p>
+        </div>
+        <button id="refreshKitchen" class="kitchen-secondary-button" type="button">
+            Actualizar
+        </button>
+    </header>
+
+    <div id="kitchenAlert" class="kitchen-alert" role="status" aria-live="polite" hidden></div>
+
+    <section class="kitchen-toolbar" aria-label="Filtros de comandas">
+        <div class="kitchen-filters" role="group" aria-label="Estado">
+            <button type="button" class="is-active" data-ticket-filter="active">Activas</button>
+            <button type="button" data-ticket-filter="pending">Pendientes</button>
+            <button type="button" data-ticket-filter="preparing">En preparación</button>
+            <button type="button" data-ticket-filter="ready">Listas</button>
+        </div>
+        <p id="kitchenUpdatedAt">Sincronizando…</p>
+    </section>
+
+    <section id="kitchenGrid" class="kitchen-grid" aria-label="Comandas activas">
+        {% for ticket in tickets %}
+            <article
+                class="kitchen-ticket is-{{ ticket.status }}"
+                data-ticket-id="{{ ticket.id }}"
+                data-ticket-status="{{ ticket.status }}"
+            >
+                <header class="ticket-header">
+                    <div>
+                        <span class="ticket-status">{{ ticket.status }}</span>
+                        <h2>Mesa {{ ticket.table_code }}</h2>
+                        <p>{{ ticket.zone_name or "Sin zona" }} · Pedido #{{ ticket.order_id }}</p>
+                    </div>
+                    <time datetime="{{ ticket.created_at }}" data-relative-time="{{ ticket.created_at }}">
+                        ahora
+                    </time>
+                </header>
+                <div class="ticket-lines">
+                    {% for line in ticket.lines %}
+                        <div class="ticket-line is-{{ line.status }}">
+                            <div>
+                                <strong>{{ line.quantity }}× {{ line.dish_name }}</strong>
+                                {% if line.note %}<p class="ticket-note">{{ line.note }}</p>{% endif %}
+                                {% if line.current_allergens %}
+                                    <p class="ticket-allergens">Alérgenos: {{ line.current_allergens }}</p>
+                                {% endif %}
+                            </div>
+                            <span>{{ line.status }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+        {% else %}
+            <div class="kitchen-empty">
+                <h2>Sin comandas activas</h2>
+                <p>Los pedidos enviados desde sala aparecerán aquí.</p>
+            </div>
+        {% endfor %}
+    </section>
+</main>
+
+<script id="kitchenBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ kitchen_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/kitchen.js') }}?v=28.1" defer></script>
+{% endblock %}

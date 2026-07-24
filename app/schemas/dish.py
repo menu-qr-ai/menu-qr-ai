@@ -1,17 +1,19 @@
+from decimal import Decimal
+
 from pydantic import Field, field_validator
 
+from app.core.money import MoneyInput, normalize_money
 from app.schemas.common import ORMModel
 
 
 class DishBase(ORMModel):
     name: str = Field(min_length=1, max_length=180)
     description: str = ""
-    price: float = Field(default=0, ge=0)
+    price: Decimal | None = None
     ingredients: str = ""
     allergens: str = ""
     image: str = ""
     category_id: int
-    restaurant_id: int | None = None
 
     @field_validator("description", "ingredients", "allergens", "image", mode="before")
     @classmethod
@@ -20,9 +22,31 @@ class DishBase(ORMModel):
 
     @field_validator("price", mode="before")
     @classmethod
-    def zero_when_none(cls, value: float | None) -> float:
-        return float(value or 0)
+    def valid_price(cls, value: MoneyInput | None) -> Decimal | None:
+        return normalize_money(
+            value,
+            nullable=True,
+            field_name="El precio",
+        )
+
+
+class DishCreate(DishBase):
+    pass
+
+
+class DishPriceUpdate(ORMModel):
+    price: Decimal | None
+
+    @field_validator("price", mode="before")
+    @classmethod
+    def valid_price(cls, value: MoneyInput | None) -> Decimal | None:
+        return normalize_money(
+            value,
+            nullable=True,
+            field_name="El precio",
+        )
 
 
 class DishRead(DishBase):
     id: int
+    restaurant_id: int

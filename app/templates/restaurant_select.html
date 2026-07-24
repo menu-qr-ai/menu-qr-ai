@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Selecciona local | HostAI{% endblock %}
+{% block body_class %}access-page{% endblock %}
+
+{% block body %}
+<main class="location-shell">
+    <header class="location-header">
+        <div>
+            <a class="access-brand" href="/app">
+                <span class="access-brand-mark">H</span>
+                <span>HostAI</span>
+            </a>
+            <p class="access-eyebrow">Contexto de trabajo</p>
+            <h1>¿En qué local estás hoy?</h1>
+            <p class="access-muted">{{ user.full_name or user.email }} · Elige un local para continuar.</p>
+        </div>
+        <form method="post" action="/logout">
+            {% include "_csrf.html" %}
+            <button class="access-secondary-button" type="submit">Cerrar sesión</button>
+        </form>
+    </header>
+
+    {% if available_restaurants %}
+        <section class="location-grid" aria-label="Restaurantes disponibles">
+            {% for item in available_restaurants %}
+                <form class="location-card {% if active_restaurant and active_restaurant.id == item.restaurant.id %}is-active{% endif %}" method="post" action="/app/restaurants/select">
+                    {% include "_csrf.html" %}
+                    <input type="hidden" name="restaurant_id" value="{{ item.restaurant.id }}">
+                    <div class="location-card-top">
+                        <span class="location-avatar">{{ item.restaurant.name[:1] }}</span>
+                        <span class="role-chip">{{ item.membership.role }}</span>
+                    </div>
+                    <div>
+                        <h2>{{ item.restaurant.name }}</h2>
+                        <p>{{ item.restaurant.city or "Ubicación no indicada" }}</p>
+                    </div>
+                    <button type="submit">
+                        {% if active_restaurant and active_restaurant.id == item.restaurant.id %}
+                            Continuar en este local
+                        {% else %}
+                            Abrir local
+                        {% endif %}
+                    </button>
+                </form>
+            {% endfor %}
+        </section>
+    {% else %}
+        <section class="access-empty">
+            <span class="access-brand-mark">!</span>
+            <h2>Sin acceso activo</h2>
+            <p>Tu cuenta no tiene restaurantes disponibles. Pide a un propietario que revise tu membresía.</p>
+        </section>
+    {% endif %}
+</main>
+{% endblock %}

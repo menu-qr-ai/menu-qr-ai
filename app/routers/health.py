@@ -1,5 +1,4 @@
-from fastapi import APIRouter
-from fastapi import Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -18,7 +17,10 @@ def legacy_health_check():
 
 
 @router.get("/health")
-def health_check(db: Session = Depends(get_db)):
+def health_check(
+    response: Response,
+    db: Session = Depends(get_db),
+):
     database_status = "ok"
     analytics_count = 0
     restaurant_count = 0
@@ -29,6 +31,7 @@ def health_check(db: Session = Depends(get_db)):
     except SQLAlchemyError:
         db.rollback()
         database_status = "error"
+        response.status_code = 503
 
     return {
         "status": "ok" if database_status == "ok" else "degraded",
