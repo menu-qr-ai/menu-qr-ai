@@ -1,0 +1,139 @@
+/* Printable table QR cards: 2 columns x 3 rows per A4 sheet. */
+
+.qr-print-page {
+    margin: 0;
+    background: #F5F2EC;
+    color: #1B1F1C;
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.qr-print-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5DED4;
+}
+
+.qr-print-toolbar h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.qr-print-toolbar p {
+    margin: 4px 0 0;
+    color: #6F6258;
+}
+
+.qr-print-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.qr-print-actions a,
+.qr-print-actions button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 20px;
+    border: 1px solid #D5C8B9;
+    border-radius: 14px;
+    background: #FFFFFF;
+    color: #1B1F1C;
+    font: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.qr-print-actions button {
+    border-color: #4E7A62;
+    background: #4E7A62;
+    color: #FFFFFF;
+}
+
+.qr-sheet {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 900px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+.qr-card {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 22px 16px;
+    border: 1px dashed #A69587;
+    border-radius: 18px;
+    background: #FFFFFF;
+    text-align: center;
+    break-inside: avoid;
+}
+
+.qr-card img {
+    width: 220px;
+    height: 220px;
+}
+
+.qr-card p {
+    margin: 0;
+}
+
+.qr-card-restaurant {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.qr-card-table {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.qr-card-zone,
+.qr-card-hint {
+    color: #6F6258;
+    font-size: 14px;
+}
+
+.qr-print-empty {
+    max-width: 640px;
+    margin: 48px auto;
+    padding: 0 16px;
+    text-align: center;
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
+
+    .qr-print-page {
+        background: #FFFFFF;
+    }
+
+    .qr-print-toolbar {
+        display: none;
+    }
+
+    .qr-sheet {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8mm;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .qr-card {
+        border-radius: 0;
+        height: 85mm;
+        align-content: center;
+    }
+}

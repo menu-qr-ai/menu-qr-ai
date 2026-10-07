@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Mesas y QR · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=37.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-dining-admin>
+    {% set active_nav = "dining" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Mesas y QR</h1>
+                <p class="dashboard-subtitle">Organiza el local en zonas, da de alta tus mesas e imprime el QR de cada una para que tus clientes vean la carta y pidan desde el móvil.</p>
+            </div>
+        </header>
+
+        {% if not dining_bootstrap.qr_reachable_from_phones %}
+        <div class="menu-admin-notice" role="note">
+            <strong>Los QR de esta instalación solo funcionan en este ordenador.</strong>
+            La dirección configurada (APP_URL) es local, así que un móvil no podrá abrirlos. Imprime los QR definitivos cuando la aplicación esté publicada con su dominio.
+        </div>
+        {% endif %}
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel" aria-labelledby="zonesTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="zonesTitle">Zonas</h2>
+                    <p>Por ejemplo: Interior, Terraza, Barra. El camarero filtra las mesas por zona.</p>
+                </div>
+            </div>
+            <ol id="zoneList" class="category-list"></ol>
+            <form id="zoneCreateForm" class="inline-form" autocomplete="off">
+                <label class="sr-only" for="newZoneName">Nueva zona</label>
+                <input id="newZoneName" name="name" type="text" maxlength="120" placeholder="Nueva zona, p. ej. Terraza" required>
+                <button type="submit" class="menu-admin-button is-primary">Añadir zona</button>
+            </form>
+        </section>
+
+        <section class="menu-admin-panel" aria-labelledby="tablesTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="tablesTitle">Mesas</h2>
+                    <p id="tableSummary">Cargando mesas...</p>
+                </div>
+                <div class="row-actions">
+                    <button type="button" id="batchTablesButton" class="menu-admin-button">Crear varias</button>
+                    <button type="button" id="newTableButton" class="menu-admin-button is-primary">Nueva mesa</button>
+                </div>
+            </div>
+
+            <div class="qr-toolbar">
+                <button type="button" id="generateMissingQrButton" class="menu-admin-button">Generar los QR que faltan</button>
+                <a id="printAllQrLink" class="menu-admin-button is-link" href="/admin/dining/qr-print" target="_blank" rel="noopener">Imprimir todos los QR</a>
+            </div>
+
+            <div id="tableGroups" class="table-groups"></div>
+        </section>
+    </div>
+</main>
+
+<dialog id="tableDialog" class="dish-dialog" aria-labelledby="tableDialogTitle">
+    <form id="tableForm" method="dialog" autocomplete="off" novalidate>
+        <header>
+            <h2 id="tableDialogTitle">Nueva mesa</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+
+        <div class="dish-form-grid">
+            <label data-single-only>
+                <span>Nombre o número *</span>
+                <input name="code" type="text" maxlength="80" placeholder="M1, Terraza 4...">
+            </label>
+            <label data-batch-only>
+                <span>Prefijo</span>
+                <input name="prefix" type="text" maxlength="20" placeholder="M" value="M">
+            </label>
+            <label data-batch-only>
+                <span>Desde el número *</span>
+                <input name="from" type="number" min="1" max="999" step="1" value="1">
+            </label>
+            <label data-batch-only>
+                <span>Hasta el número *</span>
+                <input name="to" type="number" min="1" max="999" step="1" value="10">
+            </label>
+            <label>
+                <span>Comensales *</span>
+                <input name="capacity" type="number" min="1" max="99" step="1" value="4" inputmode="numeric">
+            </label>
+            <label>
+                <span>Zona</span>
+                <select name="zone_id"></select>
+            </label>
+            <label data-single-only>
+                <span>Orden en la sala</span>
+                <input name="display_order" type="number" min="0" max="10000" step="1" value="0">
+            </label>
+            <label class="toggle-field" data-single-only>
+                <input name="is_active" type="checkbox" checked>
+                <span>Mesa en uso</span>
+            </label>
+        </div>
+
+        <p id="tableFormError" class="dish-form-error" role="alert" hidden></p>
+
+        <footer>
+            <button type="button" class="menu-admin-button" data-close-dialog>Cancelar</button>
+            <button type="submit" id="tableSubmitButton" class="menu-admin-button is-primary">Guardar</button>
+        </footer>
+    </form>
+</dialog>
+
+<dialog id="qrDialog" class="dish-dialog qr-dialog" aria-labelledby="qrDialogTitle">
+    <div class="qr-dialog-body">
+        <header>
+            <h2 id="qrDialogTitle">QR de la mesa</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+        <div class="qr-preview">
+            <img id="qrImage" alt="" width="240" height="240">
+            <p>Los clientes que lo escaneen verán la carta y podrán pedir mientras la mesa tenga un servicio abierto.</p>
+        </div>
+        <p id="qrDialogError" class="dish-form-error" role="alert" hidden></p>
+        <footer>
+            <button type="button" id="rotateQrButton" class="menu-admin-button is-danger">Cambiar QR</button>
+            <a id="downloadQrLink" class="menu-admin-button is-link" href="#" download>Descargar</a>
+            <a id="printQrLink" class="menu-admin-button is-primary is-link" href="#" target="_blank" rel="noopener">Imprimir</a>
+        </footer>
+    </div>
+</dialog>
+
+<script id="diningAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ dining_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/dining_admin.js') }}?v=37.0" defer></script>
+{% endblock %}

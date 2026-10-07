@@ -19,6 +19,12 @@
             </svg>
             Carta
         </a>
+        <a {% if active_nav == "dining" %}class="active" aria-current="page"{% endif %} href="/admin/dining">
+            <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><path d="M14 14h3v3h-3z"></path><path d="M20 14v.01"></path><path d="M14 20h.01"></path><path d="M20 20h.01"></path>
+            </svg>
+            Mesas y QR
+        </a>
         <a href="/staff/waiter">
             <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7Z"></path><path d="M3.3 7 12 12l8.7-5"></path><path d="M12 22V12"></path>

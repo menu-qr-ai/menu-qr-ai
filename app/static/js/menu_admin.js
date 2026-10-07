@@ -1,23 +1,21 @@
 (() => {
-    const bootstrapNode = document.getElementById("menuAdminBootstrap");
-    if (!bootstrapNode) {
+    const {el, readBootstrap, createAlert, createRequester, createActionRunner, plural} = window.HostAIAdmin;
+    const bootstrap = readBootstrap("menuAdminBootstrap");
+    if (!bootstrap) {
         return;
     }
 
-    const bootstrap = JSON.parse(bootstrapNode.textContent || "{}");
     const state = {
         restaurantId: bootstrap.restaurantId,
         currency: bootstrap.currency || "EUR",
         categories: bootstrap.categories || [],
         dishes: bootstrap.dishes || [],
         editingDishId: null,
-        busy: false,
+        submitting: false,
     };
 
-    const api = (path) => `/api/restaurants/${state.restaurantId}${path}`;
     const $ = (id) => document.getElementById(id);
 
-    const alertBox = $("menuAdminAlert");
     const categoryList = $("categoryList");
     const categoryCreateForm = $("categoryCreateForm");
     const dishList = $("dishList");
@@ -45,57 +43,8 @@
         return moneyFormatter.format(Number(value));
     }
 
-    function el(tag, options = {}, children = []) {
-        const node = document.createElement(tag);
-        if (options.className) node.className = options.className;
-        if (options.text !== undefined) node.textContent = options.text;
-        if (options.attrs) {
-            Object.entries(options.attrs).forEach(([key, value]) => {
-                if (value !== false && value !== null && value !== undefined) {
-                    node.setAttribute(key, value === true ? "" : String(value));
-                }
-            });
-        }
-        children.forEach((child) => child && node.append(child));
-        return node;
-    }
-
-    let alertTimer = null;
-    function showAlert(message, tone = "success") {
-        clearTimeout(alertTimer);
-        alertBox.textContent = message;
-        alertBox.dataset.tone = tone;
-        alertBox.hidden = false;
-        alertTimer = setTimeout(() => {
-            alertBox.hidden = true;
-        }, tone === "error" ? 7000 : 3500);
-    }
-
-    async function errorMessage(response) {
-        try {
-            const payload = await response.json();
-            if (payload?.error?.message) {
-                return payload.error.message;
-            }
-            if (Array.isArray(payload?.detail) && payload.detail.length) {
-                return payload.detail[0].msg.replace(/^Value error, /, "");
-            }
-        } catch (error) {
-            // Fall through to the generic message.
-        }
-        return "No se pudo guardar el cambio. Inténtalo de nuevo.";
-    }
-
-    async function request(path, options = {}) {
-        const response = await window.HostAISecurity.fetch(api(path), {
-            headers: {"Content-Type": "application/json", Accept: "application/json"},
-            ...options,
-        });
-        if (!response.ok) {
-            throw new Error(await errorMessage(response));
-        }
-        return response.status === 204 ? null : response.json();
-    }
+    const showAlert = createAlert($("menuAdminAlert"));
+    const request = createRequester(`/api/restaurants/${state.restaurantId}`);
 
     async function reload() {
         const data = await request("/menu-management");
@@ -104,27 +53,7 @@
         render();
     }
 
-    async function runAction(action, successMessage) {
-        if (state.busy) {
-            return false;
-        }
-        state.busy = true;
-        document.body.classList.add("is-busy");
-        try {
-            await action();
-            await reload();
-            if (successMessage) {
-                showAlert(successMessage);
-            }
-            return true;
-        } catch (error) {
-            showAlert(error.message, "error");
-            return false;
-        } finally {
-            state.busy = false;
-            document.body.classList.remove("is-busy");
-        }
-    }
+    const runAction = createActionRunner({reload, showAlert});
 
     function categoryName(categoryId) {
         return state.categories.find((item) => item.id === categoryId)?.name || "Sin categoría";
@@ -322,7 +251,6 @@
 
     function renderDishes() {
         const hiddenCount = state.dishes.filter((dish) => !dish.is_active).length;
-        const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
         dishSummary.textContent = state.dishes.length
             ? `${plural(state.dishes.length, "plato", "platos")} · ${plural(hiddenCount, "oculto", "ocultos")}`
             : "Aún no hay platos.";
@@ -434,10 +362,10 @@
             dishFormError.hidden = false;
             return;
         }
-        if (state.busy) {
+        if (state.submitting || runAction.isBusy()) {
             return;
         }
-        state.busy = true;
+        state.submitting = true;
         dishSubmitButton.disabled = true;
         dishFormError.hidden = true;
         const isEdit = state.editingDishId !== null;
@@ -453,7 +381,7 @@
             dishFormError.textContent = error.message;
             dishFormError.hidden = false;
         } finally {
-            state.busy = false;
+            state.submitting = false;
             dishSubmitButton.disabled = false;
         }
     });

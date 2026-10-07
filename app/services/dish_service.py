@@ -4,9 +4,10 @@ from starlette import status
 
 from app.core.access import Permission
 from app.core.exceptions import AppError
-from app.models import Category, Dish, User
+from app.models import Dish, User
 from app.schemas.dish import DishCreate, DishPriceUpdate, DishUpdate
 from app.services.access_service import authorize_restaurant
+from app.services.menu_management_service import require_category
 
 
 def create_dish(
@@ -21,7 +22,7 @@ def create_dish(
         restaurant_id,
         Permission.RESTAURANT_MANAGE,
     )
-    _require_category(db, restaurant_id, payload.category_id)
+    require_category(db, restaurant_id, payload.category_id)
     dish = Dish(
         **payload.model_dump(),
         restaurant_id=restaurant_id,
@@ -53,7 +54,7 @@ def update_dish(
         if data["category_id"] is None:
             data.pop("category_id")
         else:
-            _require_category(db, restaurant_id, data["category_id"])
+            require_category(db, restaurant_id, data["category_id"])
     for field in ("description", "ingredients", "allergens", "image"):
         if field in data and data[field] is None:
             data[field] = ""
@@ -113,23 +114,3 @@ def update_dish_price(
     db.commit()
     db.refresh(dish)
     return dish
-
-
-def _require_category(
-    db: Session,
-    restaurant_id: int,
-    category_id: int,
-) -> Category:
-    category = db.scalar(
-        select(Category).where(
-            Category.id == category_id,
-            Category.restaurant_id == restaurant_id,
-        )
-    )
-    if category is None:
-        raise AppError(
-            "Categoria no encontrada para este restaurante.",
-            status_code=status.HTTP_404_NOT_FOUND,
-            code="category_not_found",
-        )
-    return category

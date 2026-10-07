@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}QR de mesas · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}qr-print-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/qr_print.css') }}?v=37.0">
+{% endblock %}
+
+{% block body %}
+<header class="qr-print-toolbar">
+    <div>
+        <h1>QR de mesas · {{ restaurant.name }}</h1>
+        <p>{{ tables | length }} {{ "tarjeta" if tables | length == 1 else "tarjetas" }}. Imprime en A4 y recorta por las líneas.</p>
+    </div>
+    <div class="qr-print-actions">
+        <a href="/admin/dining">Volver</a>
+        {% if tables %}<button type="button" id="printButton">Imprimir</button>{% endif %}
+    </div>
+</header>
+
+{% if tables %}
+<main class="qr-sheet">
+    {% for table in tables %}
+    <article class="qr-card">
+        <p class="qr-card-restaurant">{{ restaurant.name }}</p>
+        <img
+            src="/api/dining/{{ restaurant.id }}/tables/{{ table.id }}/customer-qr.png"
+            alt="Código QR de la mesa {{ table.code }}"
+            width="220"
+            height="220"
+        >
+        <p class="qr-card-table">Mesa {{ table.code }}</p>
+        {% if table.zone_name %}<p class="qr-card-zone">{{ table.zone_name }}</p>{% endif %}
+        <p class="qr-card-hint">Escanea para ver la carta y pedir</p>
+    </article>
+    {% endfor %}
+</main>
+{% else %}
+<main class="qr-print-empty">
+    <p>No hay mesas en uso con QR. Vuelve a <a href="/admin/dining">Mesas y QR</a> y pulsa «Generar los QR que faltan».</p>
+</main>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/qr_print.js') }}?v=37.0" defer></script>
+{% endblock %}
