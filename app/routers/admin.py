@@ -13,6 +13,7 @@ from app.services.access_service import authorize_restaurant, list_user_membersh
 from app.services.admin_service import get_admin_dashboard_data
 from app.services.dining_setup_service import get_dining_setup, get_printable_table_qrs
 from app.services.menu_management_service import get_menu_management
+from app.services.team_service import list_team
 from app.services.restaurant_service import require_restaurant
 from app.templates import templates
 
@@ -185,5 +186,35 @@ def admin_dining_qr_print(
         context={
             "restaurant": require_restaurant(db, access.restaurant_id),
             "tables": tables,
+        },
+    )
+
+
+@router.get("/team")
+def admin_team(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        None,
+        Permission.MEMBERSHIP_MANAGE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    restaurant = require_restaurant(db, access.restaurant_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/team.html",
+        context={
+            "restaurant": restaurant,
+            "current_user": current_user,
+            "current_membership": access,
+            "team_bootstrap": {
+                "restaurantId": restaurant.id,
+                "members": list_team(db, current_user, restaurant.id),
+            },
         },
     )

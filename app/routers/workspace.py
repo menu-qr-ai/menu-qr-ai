@@ -122,6 +122,18 @@ def app_home(
     return RedirectResponse(context["next_url"], status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.get("/app/password")
+def password_page(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+):
+    return templates.TemplateResponse(
+        request=request,
+        name="account_password.html",
+        context={"current_user": current_user},
+    )
+
+
 @router.get("/app/restaurants")
 def restaurant_selector(
     request: Request,

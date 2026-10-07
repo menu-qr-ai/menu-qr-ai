@@ -10,7 +10,7 @@ from app.core.logging import configure_logging, log_request_middleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.session import SignedSessionMiddleware
 from app.models import Category, CustomerSession, Dish, InventoryItem, KitchenTicket, KitchenTicketLine, Order, OrderLine, Restaurant, RestaurantMembership, RestaurantTable, ServiceSession, User, Zone  # noqa: F401
-from app.routers import access, admin, ai, analytics, api, auth, business, customer, dashboard, dining, health, inventory, kitchen, kitchen_workspace, menu, menu_management, operations, orders, payments, prediction, restaurant, restaurants, translation, waiter, workspace
+from app.routers import access, admin, ai, analytics, api, auth, business, customer, dashboard, dining, health, inventory, kitchen, kitchen_workspace, menu, menu_management, operations, orders, payments, prediction, restaurant, restaurants, team, translation, waiter, workspace
 
 
 @asynccontextmanager
@@ -81,6 +81,7 @@ def create_app() -> FastAPI:
     application.include_router(prediction.router)
     application.include_router(restaurants.router)
     application.include_router(menu_management.router)
+    application.include_router(team.router)
     application.include_router(restaurant.router)
     application.include_router(api.router)
     application.include_router(admin.router)
