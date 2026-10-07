@@ -52,7 +52,9 @@ Genera o actualiza:
 - usuario propietario demo `owner@demo.hostai.local`
 
 La contraseña local de la demo es `HostAI-demo-2026`. Estas credenciales se crean
-únicamente al ejecutar el seed explícito y no deben utilizarse en producción.
+únicamente al ejecutar el seed explícito y no deben utilizarse en producción: en
+producción el seed exige `DEMO_OWNER_PASSWORD` y se niega a usar la contraseña
+pública.
 
 Reset demo:
 
@@ -246,6 +248,24 @@ ejecutarlas en dispositivos físicos.
 ```bash
 docker compose up --build
 ```
+
+## Publicar en Render (Blueprint)
+
+`render.yaml` crea la web y la base de datos PostgreSQL en el plan gratuito
+(región Frankfurt):
+
+1. En Render: **New > Blueprint**, elige este repositorio y pulsa **Apply**.
+2. Espera al primer despliegue. `scripts/render_start.sh` aplica las
+   migraciones y, como `SEED_DEMO_ON_EMPTY=true`, carga el restaurante demo
+   **solo si la base de datos está vacía** (los redespliegues no lo pisan).
+3. Entra con `owner@demo.hostai.local` y la contraseña que Render generó en la
+   variable `DEMO_OWNER_PASSWORD` (pestaña *Environment* del servicio).
+
+`APP_URL` y `CORS_ORIGINS` toman la URL pública de Render si no se definen;
+para un dominio propio, defínelas explícitamente y reimprime los QR.
+
+Plan gratuito: la web se duerme tras 15 minutos sin uso y la base de datos
+gratuita caduca a los 30 días. Para uso real, sube ambos a un plan de pago.
 
 ## Render
 
