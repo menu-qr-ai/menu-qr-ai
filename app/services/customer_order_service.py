@@ -45,7 +45,7 @@ def get_customer_session_state(
         db.scalars(
             select(Category)
             .where(Category.restaurant_id == restaurant_id)
-            .order_by(Category.name, Category.id)
+            .order_by(Category.display_order, Category.name, Category.id)
         ).all()
     )
     dishes = _load_customer_dishes(db, restaurant_id)
@@ -339,8 +339,8 @@ def _load_customer_dishes(
                     DishIngredient.inventory_item
                 )
             )
-            .where(Dish.restaurant_id == restaurant_id)
-            .order_by(Dish.category_id, Dish.name, Dish.id)
+            .where(Dish.restaurant_id == restaurant_id, Dish.is_active.is_(True))
+            .order_by(Dish.category_id, Dish.display_order, Dish.name, Dish.id)
         ).all()
     )
 
@@ -492,6 +492,7 @@ def _require_customer_dish(
         select(Dish).where(
             Dish.id == dish_id,
             Dish.restaurant_id == restaurant_id,
+            Dish.is_active.is_(True),
         )
     )
     if dish is None:

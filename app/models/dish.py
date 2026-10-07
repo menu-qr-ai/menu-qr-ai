@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Column, ForeignKey, Integer, Numeric, String, Text, true
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -22,6 +22,9 @@ class Dish(Base):
     image = Column(String)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
+    display_order = Column(Integer, nullable=False, default=0, server_default="0")
+    # Hidden dishes leave the menu and ordering but stay for order history.
+    is_active = Column(Boolean, nullable=False, default=True, server_default=true(), index=True)
 
     category = relationship("Category", back_populates="dishes")
     restaurant = relationship("Restaurant", back_populates="dishes")

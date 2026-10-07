@@ -51,12 +51,12 @@ def get_menu_data(db: Session, restaurant_id: int) -> dict:
     categories = db.scalars(
         select(Category)
         .where(Category.restaurant_id == restaurant_id)
-        .order_by(Category.name, Category.id)
+        .order_by(Category.display_order, Category.name, Category.id)
     ).all()
     dishes = db.scalars(
         select(Dish)
-        .where(Dish.restaurant_id == restaurant_id)
-        .order_by(Dish.category_id, Dish.name, Dish.id)
+        .where(Dish.restaurant_id == restaurant_id, Dish.is_active.is_(True))
+        .order_by(Dish.category_id, Dish.display_order, Dish.name, Dish.id)
     ).all()
 
     return {
