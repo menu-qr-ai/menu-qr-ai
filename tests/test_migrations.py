@@ -21,7 +21,7 @@ from app.database import Base
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_HEAD = "0022_add_customer_qr_ordering_foundation"
+EXPECTED_HEAD = "0023_add_menu_management"
 
 
 class MigrationBaselineTests(unittest.TestCase):
@@ -78,6 +78,7 @@ class MigrationBaselineTests(unittest.TestCase):
             "0019_add_order_fulfillment_bridge",
             "0020_add_service_session_settlement",
             "0021_add_payment_foundation",
+            "0022_add_customer_qr_ordering_foundation",
         ):
             with self.subTest(revision=revision), tempfile.TemporaryDirectory() as temp_dir:
                 database_path = Path(temp_dir) / "upgrade.db"
@@ -521,6 +522,7 @@ class MigrationBaselineTests(unittest.TestCase):
                 "0020_add_service_session_settlement",
                 "0021_add_payment_foundation",
                 "0022_add_customer_qr_ordering_foundation",
+                "0023_add_menu_management",
             }.issubset(revisions)
         )
         self.assertEqual(script.get_current_head(), EXPECTED_HEAD)

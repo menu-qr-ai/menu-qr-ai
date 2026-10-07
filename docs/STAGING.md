@@ -98,7 +98,7 @@ The automated CI job starts a real PostgreSQL service and sets
 `HOSTAI_TEST_POSTGRES_URL`. The guarded integration suite:
 
 - requires a dedicated database named `hostai_*_test`;
-- upgrades every revision from 0001 through 0022 one by one;
+- upgrades every revision from 0001 through 0023 one by one;
 - verifies the final tables, unique constraints and partial index;
 - round-trips 0022 to 0018 and back;
 - races fulfillment, settlement and payments with independent connections;
@@ -184,7 +184,7 @@ python -m pytest -q
 python -m compileall -q app tests scripts
 ```
 
-Confirm the revision is `0022_add_customer_qr_ordering_foundation`, `/health`
+Confirm the revision is `0023_add_menu_management`, `/health`
 is 200 and the HTTPS probe passes. Validate that the QR route redirects to a
 temporary customer session, that no capability token appears in application or
 proxy logs, and that waiter approval is required before kitchen. If a deploy

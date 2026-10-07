@@ -4,51 +4,13 @@
 {% block body_class %}dashboard-page{% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=34.0">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.2">
 {% endblock %}
 
 {% block body %}
     <main class="dashboard-shell" data-restaurant-id="{{ restaurant_id or '' }}" data-range="{{ range or '30d' }}">
-        <aside class="dashboard-sidebar">
-            <a class="dashboard-brand" href="/admin">
-                <span>H</span>
-                <strong>HostAI</strong>
-            </a>
-            <nav aria-label="Panel">
-                <a class="active" href="/admin/dashboard">
-                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="3" y="3" width="7" height="8" rx="2"></rect><rect x="14" y="3" width="7" height="5" rx="2"></rect><rect x="14" y="12" width="7" height="9" rx="2"></rect><rect x="3" y="15" width="7" height="6" rx="2"></rect>
-                    </svg>
-                    Dashboard
-                </a>
-                {% if current_membership.role in ["owner", "manager"] %}
-                <a href="/staff/waiter">
-                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7Z"></path><path d="M3.3 7 12 12l8.7-5"></path><path d="M12 22V12"></path>
-                    </svg>
-                    Sala
-                </a>
-                <a href="/staff/kitchen">
-                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M5 4h14"></path><path d="M7 4v5a5 5 0 0 0 10 0V4"></path><path d="M12 14v6"></path><path d="M8 20h8"></path>
-                    </svg>
-                    Cocina
-                </a>
-                <a href="/admin/restaurants">
-                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 21V7l8-4 8 4v14"></path><path d="M9 21v-7h6v7"></path><path d="M9 9h.01"></path><path d="M15 9h.01"></path>
-                    </svg>
-                    Restaurantes
-                </a>
-                {% endif %}
-                <a href="/menu">
-                    <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path>
-                    </svg>
-                    Carta publica
-                </a>
-            </nav>
-        </aside>
+        {% set active_nav = "dashboard" %}
+        {% include "_management_nav.html" %}
 
         <div class="dashboard-content">
             {% include "_active_context.html" %}

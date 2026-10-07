@@ -496,6 +496,12 @@ def _require_dish(db: Session, restaurant_id: int, dish_id: int) -> Dish:
             status_code=status.HTTP_404_NOT_FOUND,
             code="dish_not_found",
         )
+    if not dish.is_active:
+        raise AppError(
+            "El plato esta oculto en la carta y no se puede pedir.",
+            status_code=status.HTTP_409_CONFLICT,
+            code="dish_inactive",
+        )
     return dish
 
 

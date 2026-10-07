@@ -10,6 +10,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
+    display_order = Column(Integer, nullable=False, default=0, server_default="0")
 
     restaurant = relationship("Restaurant", back_populates="categories")
     dishes = relationship("Dish", back_populates="category", cascade="all, delete-orphan")

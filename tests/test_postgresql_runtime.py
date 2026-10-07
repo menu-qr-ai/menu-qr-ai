@@ -47,7 +47,7 @@ from app.services.service_session_settlement_service import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 POSTGRES_URL = os.getenv("HOSTAI_TEST_POSTGRES_URL")
-EXPECTED_HEAD = "0022_add_customer_qr_ordering_foundation"
+EXPECTED_HEAD = "0023_add_menu_management"
 
 
 @unittest.skipUnless(

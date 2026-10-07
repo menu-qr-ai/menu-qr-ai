@@ -11,6 +11,7 @@ from app.dependencies.auth import require_web_user
 from app.models import User
 from app.services.access_service import authorize_restaurant, list_user_memberships, resolve_restaurant_access
 from app.services.admin_service import get_admin_dashboard_data
+from app.services.menu_management_service import get_menu_management
 from app.services.restaurant_service import require_restaurant
 from app.templates import templates
 
@@ -93,5 +94,37 @@ def admin_restaurant_settings(
             "current_user": current_user,
             "current_membership": active_membership,
             "app_version": {"name": APP_NAME, "version": VERSION, "build": BUILD},
+        },
+    )
+
+
+@router.get("/menu")
+def admin_menu_management(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        None,
+        Permission.RESTAURANT_MANAGE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    restaurant = require_restaurant(db, access.restaurant_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/menu.html",
+        context={
+            "restaurant": restaurant,
+            "current_user": current_user,
+            "current_membership": access,
+            "menu_bootstrap": {
+                "restaurantId": restaurant.id,
+                "currency": restaurant.currency or "EUR",
+                "publicMenuUrl": f"/r/{restaurant.slug}/menu" if restaurant.slug else "/menu",
+                **get_menu_management(db, current_user, restaurant.id),
+            },
         },
     )

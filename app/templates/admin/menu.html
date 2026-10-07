@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Carta · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.2">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=36.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-menu-admin>
+    {% set active_nav = "menu" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Carta</h1>
+                <p class="dashboard-subtitle">Crea categorías y platos, ajusta precios y oculta lo que no tengas hoy. Los cambios se ven al momento en la carta de tus clientes.</p>
+            </div>
+            <a class="menu-admin-link" id="publicMenuLink" href="#" target="_blank" rel="noopener">Ver carta pública</a>
+        </header>
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel" aria-labelledby="categoriesTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="categoriesTitle">Categorías</h2>
+                    <p>El orden de esta lista es el orden de la carta.</p>
+                </div>
+            </div>
+            <ol id="categoryList" class="category-list"></ol>
+            <form id="categoryCreateForm" class="inline-form" autocomplete="off">
+                <label class="sr-only" for="newCategoryName">Nueva categoría</label>
+                <input id="newCategoryName" name="name" type="text" maxlength="120" placeholder="Nueva categoría, p. ej. Postres" required>
+                <button type="submit" class="menu-admin-button is-primary">Añadir categoría</button>
+            </form>
+        </section>
+
+        <section class="menu-admin-panel" aria-labelledby="dishesTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="dishesTitle">Platos</h2>
+                    <p id="dishSummary">Cargando platos...</p>
+                </div>
+                <button type="button" id="newDishButton" class="menu-admin-button is-primary">Nuevo plato</button>
+            </div>
+
+            <div class="dish-toolbar">
+                <label class="sr-only" for="dishSearch">Buscar plato</label>
+                <input id="dishSearch" type="search" placeholder="Buscar plato..." autocomplete="off">
+                <label class="sr-only" for="dishCategoryFilter">Filtrar por categoría</label>
+                <select id="dishCategoryFilter">
+                    <option value="all">Todas las categorías</option>
+                </select>
+                <label class="toggle-filter">
+                    <input id="showHiddenOnly" type="checkbox">
+                    <span>Solo ocultos</span>
+                </label>
+            </div>
+
+            <div id="dishList" class="dish-list"></div>
+        </section>
+    </div>
+</main>
+
+<dialog id="dishDialog" class="dish-dialog" aria-labelledby="dishDialogTitle">
+    <form id="dishForm" method="dialog" autocomplete="off" novalidate>
+        <header>
+            <h2 id="dishDialogTitle">Nuevo plato</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+
+        <div class="dish-form-grid">
+            <label class="span-2">
+                <span>Nombre *</span>
+                <input name="name" type="text" maxlength="180" required>
+            </label>
+            <label>
+                <span>Categoría *</span>
+                <select name="category_id" required></select>
+            </label>
+            <label>
+                <span>Precio</span>
+                <input name="price" type="text" inputmode="decimal" placeholder="12,50">
+            </label>
+            <label class="span-2">
+                <span>Descripción</span>
+                <textarea name="description" rows="3" maxlength="2000"></textarea>
+            </label>
+            <label class="span-2">
+                <span>Ingredientes</span>
+                <textarea name="ingredients" rows="2" maxlength="2000" placeholder="Tomate, mozzarella, albahaca"></textarea>
+            </label>
+            <label class="span-2">
+                <span>Alérgenos</span>
+                <input name="allergens" type="text" maxlength="500" placeholder="Gluten, lactosa">
+            </label>
+            <label class="span-2">
+                <span>Imagen (URL)</span>
+                <input name="image" type="url" maxlength="500" placeholder="https://...">
+            </label>
+            <label>
+                <span>Orden en su categoría</span>
+                <input name="display_order" type="number" min="0" max="10000" step="1" value="0">
+            </label>
+            <label class="toggle-field">
+                <input name="is_active" type="checkbox" checked>
+                <span>Visible en la carta</span>
+            </label>
+        </div>
+
+        <p id="dishFormError" class="dish-form-error" role="alert" hidden></p>
+
+        <footer>
+            <button type="button" class="menu-admin-button" data-close-dialog>Cancelar</button>
+            <button type="submit" id="dishSubmitButton" class="menu-admin-button is-primary">Guardar</button>
+        </footer>
+    </form>
+</dialog>
+
+<script id="menuAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ menu_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/menu_admin.js') }}?v=36.1" defer></script>
+{% endblock %}
