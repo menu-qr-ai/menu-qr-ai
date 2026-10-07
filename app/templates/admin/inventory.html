@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=39.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-inventory-admin>
+    {% set active_nav = "inventory" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Inventario</h1>
+                <p class="dashboard-subtitle">Tus ingredientes y su stock. Registra lo que compras, lo que se pierde y lo que cuentas en el almacén; las ventas lo descuentan solas según las recetas.</p>
+            </div>
+        </header>
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="stock-summary" aria-label="Resumen de stock">
+            <button type="button" class="stock-summary-card is-critical" data-summary-filter="restock">
+                <strong id="summaryOut">0</strong><span>agotados</span>
+            </button>
+            <button type="button" class="stock-summary-card is-warning" data-summary-filter="restock">
+                <strong id="summaryLow">0</strong><span>bajo el mínimo</span>
+            </button>
+            <button type="button" class="stock-summary-card is-ok" data-summary-filter="all">
+                <strong id="summaryOk">0</strong><span>en orden</span>
+            </button>
+        </section>
+
+        <section class="menu-admin-panel" aria-labelledby="itemsTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="itemsTitle">Ingredientes</h2>
+                    <p id="itemSummary">Cargando ingredientes...</p>
+                </div>
+                <button type="button" id="newItemButton" class="menu-admin-button is-primary">Nuevo ingrediente</button>
+            </div>
+
+            <div class="dish-toolbar">
+                <label class="sr-only" for="itemSearch">Buscar ingrediente</label>
+                <input id="itemSearch" type="search" placeholder="Buscar ingrediente o proveedor..." autocomplete="off">
+                <label class="sr-only" for="itemFilter">Filtrar</label>
+                <select id="itemFilter">
+                    <option value="all">Todos</option>
+                    <option value="restock">Por reponer</option>
+                    <option value="inactive">Retirados</option>
+                </select>
+                <span></span>
+            </div>
+
+            <div id="itemList" class="dish-list"></div>
+        </section>
+    </div>
+</main>
+
+<dialog id="itemDialog" class="dish-dialog" aria-labelledby="itemDialogTitle">
+    <form id="itemForm" method="dialog" autocomplete="off" novalidate>
+        <header>
+            <h2 id="itemDialogTitle">Nuevo ingrediente</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+        <div class="dish-form-grid">
+            <label class="span-2">
+                <span>Nombre *</span>
+                <input name="name" type="text" maxlength="160" placeholder="Tomate, harina, mozzarella...">
+            </label>
+            <label>
+                <span>Unidad *</span>
+                <select name="unit"></select>
+                <small id="unitLockedHint" class="field-hint" hidden>Tiene movimientos o recetas: la unidad ya no se puede cambiar.</small>
+            </label>
+            <label data-create-only>
+                <span>Stock inicial</span>
+                <input name="current_stock" type="text" inputmode="decimal" placeholder="0">
+            </label>
+            <label>
+                <span>Stock mínimo</span>
+                <input name="minimum_stock" type="text" inputmode="decimal" placeholder="0">
+                <small class="field-hint">Por debajo, aparece como «por reponer».</small>
+            </label>
+            <label>
+                <span>Stock ideal</span>
+                <input name="ideal_stock" type="text" inputmode="decimal" placeholder="0">
+            </label>
+            <label>
+                <span>Coste por unidad (€)</span>
+                <input name="cost" type="text" inputmode="decimal" placeholder="2,10">
+                <small class="field-hint">Necesario para valorar mermas.</small>
+            </label>
+            <label>
+                <span>Proveedor</span>
+                <input name="supplier" type="text" maxlength="180">
+            </label>
+            <label class="toggle-field" data-edit-only>
+                <input name="is_active" type="checkbox" checked>
+                <span>En uso</span>
+            </label>
+        </div>
+        <p id="itemFormError" class="dish-form-error" role="alert" hidden></p>
+        <footer>
+            <button type="button" class="menu-admin-button" data-close-dialog>Cancelar</button>
+            <button type="submit" id="itemSubmitButton" class="menu-admin-button is-primary">Guardar</button>
+        </footer>
+    </form>
+</dialog>
+
+<dialog id="movementDialog" class="dish-dialog" aria-labelledby="movementDialogTitle">
+    <form id="movementForm" method="dialog" autocomplete="off" novalidate>
+        <header>
+            <h2 id="movementDialogTitle">Entrada</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+        <div class="dish-form-grid">
+            <p id="movementContext" class="movement-context span-2"></p>
+            <label data-mode="intake waste">
+                <span id="quantityLabel">Cantidad *</span>
+                <input name="quantity" type="text" inputmode="decimal">
+            </label>
+            <label data-mode="count">
+                <span id="countedLabel">Stock contado *</span>
+                <input name="counted" type="text" inputmode="decimal">
+            </label>
+            <label data-mode="intake">
+                <span>Precio por unidad (€)</span>
+                <input name="unit_cost" type="text" inputmode="decimal" placeholder="Opcional">
+            </label>
+            <label data-mode="intake">
+                <span>Albarán o factura</span>
+                <input name="reference" type="text" maxlength="120" placeholder="Opcional">
+            </label>
+            <label data-mode="waste">
+                <span>Motivo *</span>
+                <select name="loss_category">
+                    <option value="expiration">Caducado</option>
+                    <option value="spoilage">Estropeado</option>
+                    <option value="preparation_error">Error de preparación</option>
+                    <option value="breakage">Rotura o derrame</option>
+                    <option value="unknown_loss">Pérdida sin explicar</option>
+                    <option value="other">Otro</option>
+                </select>
+            </label>
+            <label class="span-2" data-mode="waste count">
+                <span>Nota</span>
+                <input name="note" type="text" maxlength="200" placeholder="Opcional">
+            </label>
+            <p id="countPreview" class="movement-preview span-2" data-mode="count" aria-live="polite"></p>
+        </div>
+        <p id="movementFormError" class="dish-form-error" role="alert" hidden></p>
+        <footer>
+            <button type="button" class="menu-admin-button" data-close-dialog>Cancelar</button>
+            <button type="submit" id="movementSubmitButton" class="menu-admin-button is-primary">Registrar</button>
+        </footer>
+    </form>
+</dialog>
+
+<script id="inventoryAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ inventory_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/inventory_admin.js') }}?v=39.0" defer></script>
+{% endblock %}

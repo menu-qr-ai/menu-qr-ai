@@ -89,6 +89,7 @@ def receive_purchase_intake(db: Session, payload: PurchaseIntakeCreate) -> Purch
         movement = create_inventory_movement_record(
             db,
             movement_payload,
+            require_matching_unit=True,
         )
         if payload.unit_cost is not None:
             assert weighted_average_trace is not None

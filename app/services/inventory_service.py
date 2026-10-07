@@ -17,11 +17,13 @@ from app.schemas.inventory import (
     InventoryCriticalItem,
     InventoryInsightRead,
     InventoryItemCreate,
+    InventoryItemRead,
     InventoryItemUpdate,
     InventoryMovementCreate,
     InventoryOverview,
     InventoryStatus,
     RecommendedAction,
+    WASTE_LOSS_CATEGORIES,
 )
 from app.services.dashboard_service import get_dashboard_summary
 from app.services.restaurant_service import require_restaurant
@@ -35,6 +37,42 @@ def list_inventory_items(db: Session, restaurant_id: int | None = None, active_o
     if active_only:
         statement = statement.where(InventoryItem.is_active.is_(True))
     return list(db.scalars(statement).all())
+
+
+def get_inventory_management(db: Session, restaurant_id: int) -> dict:
+    """Items for the management screen, with recipe usage and whether the unit is locked."""
+    items = list_inventory_items(db, restaurant_id)
+    item_ids = [item.id for item in items]
+    items_with_movements = set(
+        db.scalars(
+            select(InventoryMovement.inventory_item_id)
+            .where(InventoryMovement.inventory_item_id.in_(item_ids))
+            .distinct()
+        ).all()
+    ) if item_ids else set()
+    dishes_by_item: dict[int, list[str]] = defaultdict(list)
+    if item_ids:
+        rows = db.execute(
+            select(DishIngredient.inventory_item_id, Dish.name)
+            .join(Dish, Dish.id == DishIngredient.dish_id)
+            .where(DishIngredient.inventory_item_id.in_(item_ids))
+            .order_by(Dish.name)
+        ).all()
+        for item_id, dish_name in rows:
+            dishes_by_item[item_id].append(dish_name)
+    return {
+        "restaurant_id": restaurant_id,
+        "units": sorted(RECIPE_UNITS),
+        "waste_categories": sorted(WASTE_LOSS_CATEGORIES),
+        "items": [
+            {
+                **InventoryItemRead.model_validate(item).model_dump(mode="json"),
+                "used_in_dishes": dishes_by_item.get(item.id, []),
+                "unit_locked": item.id in items_with_movements or item.id in dishes_by_item,
+            }
+            for item in items
+        ],
+    }
 
 
 def require_inventory_item(db: Session, item_id: int) -> InventoryItem:
@@ -74,7 +112,22 @@ def create_inventory_item(db: Session, payload: InventoryItemCreate) -> Inventor
 
 def update_inventory_item(db: Session, item_id: int, payload: InventoryItemUpdate) -> InventoryItem:
     item = require_inventory_item(db, item_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    if data.get("unit") is not None and data["unit"] != item.unit:
+        has_history = db.scalar(
+            select(InventoryMovement.id).where(InventoryMovement.inventory_item_id == item.id).limit(1)
+        )
+        has_recipes = db.scalar(
+            select(DishIngredient.id).where(DishIngredient.inventory_item_id == item.id).limit(1)
+        )
+        if has_history is not None or has_recipes is not None:
+            # Relabelling 5 kg as 5 g would silently rewrite stock, costs and recipes.
+            raise AppError(
+                "No se puede cambiar la unidad de un ingrediente con movimientos o recetas. Crea uno nuevo.",
+                status_code=status.HTTP_409_CONFLICT,
+                code="inventory_unit_locked",
+            )
+    for field, value in data.items():
         setattr(item, field, value)
     item.updated_at = datetime.utcnow()
     db.commit()
@@ -99,7 +152,21 @@ def _movement_delta(movement_type: str, quantity: float) -> float:
     return quantity
 
 
-def create_inventory_movement_record(db: Session, payload: InventoryMovementCreate) -> InventoryMovement:
+def require_item_unit(item: InventoryItem, unit: str | None) -> None:
+    """There is no unit conversion: a manual entry in another unit would corrupt the stock."""
+    if unit is not None and unit != item.unit:
+        raise AppError(
+            f"La unidad debe ser la del ingrediente ({item.unit}). No se convierten unidades.",
+            code="inventory_unit_mismatch",
+        )
+
+
+def create_inventory_movement_record(
+    db: Session,
+    payload: InventoryMovementCreate,
+    *,
+    require_matching_unit: bool = False,
+) -> InventoryMovement:
     if payload.movement_type not in MOVEMENT_TYPES:
         raise AppError("Tipo de movimiento de inventario no valido.", code="invalid_inventory_movement_type")
 
@@ -115,11 +182,16 @@ def create_inventory_movement_record(db: Session, payload: InventoryMovementCrea
     movement_unit = payload.unit or item.unit
     if movement_unit not in RECIPE_UNITS:
         raise AppError("Unidad de movimiento de inventario no valida.", code="invalid_inventory_movement_unit")
+    if require_matching_unit:
+        require_item_unit(item, payload.unit)
 
     delta = _movement_delta(payload.movement_type, payload.quantity)
     next_stock = item.current_stock + delta
     if next_stock < 0:
-        raise AppError("El movimiento dejaria stock negativo.", code="inventory_stock_negative")
+        raise AppError(
+            "No hay tanto stock: la operación dejaría el ingrediente en negativo. Revisa la cantidad o haz un recuento.",
+            code="inventory_stock_negative",
+        )
 
     movement_data = payload.model_dump()
     movement_data["unit"] = movement_unit
@@ -134,7 +206,7 @@ def create_inventory_movement_record(db: Session, payload: InventoryMovementCrea
 
 
 def create_inventory_movement(db: Session, payload: InventoryMovementCreate) -> InventoryMovement:
-    movement = create_inventory_movement_record(db, payload)
+    movement = create_inventory_movement_record(db, payload, require_matching_unit=True)
     db.commit()
     db.refresh(movement)
     return movement

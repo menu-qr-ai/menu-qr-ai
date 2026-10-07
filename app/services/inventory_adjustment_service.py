@@ -55,6 +55,7 @@ def record_inventory_adjustment(db: Session, payload: InventoryAdjustmentCreate)
                 note=payload.note,
                 created_at=adjusted_at,
             ),
+            require_matching_unit=True,
         )
         current_stock = movement.inventory_item.current_stock
 
