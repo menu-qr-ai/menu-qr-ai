@@ -11,6 +11,7 @@ from app.dependencies.auth import require_web_user
 from app.models import User
 from app.services.access_service import authorize_restaurant, list_user_memberships, resolve_restaurant_access
 from app.services.admin_service import get_admin_dashboard_data
+from app.services.dining_setup_service import get_dining_setup, get_printable_table_qrs
 from app.services.menu_management_service import get_menu_management
 from app.services.restaurant_service import require_restaurant
 from app.templates import templates
@@ -126,5 +127,63 @@ def admin_menu_management(
                 "publicMenuUrl": f"/r/{restaurant.slug}/menu" if restaurant.slug else "/menu",
                 **get_menu_management(db, current_user, restaurant.id),
             },
+        },
+    )
+
+
+@router.get("/dining")
+def admin_dining_setup(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        None,
+        Permission.DINING_ROOM_MANAGE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    restaurant = require_restaurant(db, access.restaurant_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/dining.html",
+        context={
+            "restaurant": restaurant,
+            "current_user": current_user,
+            "current_membership": access,
+            "dining_bootstrap": {
+                "restaurantId": restaurant.id,
+                **get_dining_setup(db, current_user, restaurant.id),
+            },
+        },
+    )
+
+
+@router.get("/dining/qr-print")
+def admin_dining_qr_print(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    table_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        None,
+        Permission.CUSTOMER_QR_MANAGE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    tables = get_printable_table_qrs(db, current_user, access.restaurant_id)
+    if table_id is not None:
+        tables = [table for table in tables if table["id"] == table_id]
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/dining_qr_print.html",
+        context={
+            "restaurant": require_restaurant(db, access.restaurant_id),
+            "tables": tables,
         },
     )

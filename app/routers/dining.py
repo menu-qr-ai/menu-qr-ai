@@ -43,6 +43,7 @@ from app.services.customer_session_service import (
     get_table_qr,
     issue_table_qr,
 )
+from app.services.dining_setup_service import get_dining_setup
 from app.services.qr_service import build_qr_png_bytes
 
 
@@ -171,6 +172,15 @@ def table_update(
     db: Session = Depends(get_db),
 ):
     return update_table(db, current_user, restaurant_id, table_id, payload)
+
+
+@router.get("/setup")
+def dining_setup(
+    restaurant_id: int,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+):
+    return get_dining_setup(db, current_user, restaurant_id)
 
 
 @router.get("/room", response_model=DiningRoomState)

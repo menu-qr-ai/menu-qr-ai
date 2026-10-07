@@ -490,3 +490,136 @@
         flex: 1;
     }
 }
+
+/* --- Shared by the other management screens (Mesas y QR...) --- */
+
+.menu-admin-page [hidden] {
+    display: none !important;
+}
+
+.menu-admin-notice {
+    margin-bottom: 18px;
+    padding: 14px 18px;
+    border: 1px solid rgba(216, 166, 75, 0.5);
+    border-radius: 16px;
+    background: rgba(216, 166, 75, 0.12);
+    line-height: 1.5;
+}
+
+.menu-admin-notice strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.menu-admin-button.is-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.menu-admin-button.is-disabled {
+    opacity: 0.4;
+}
+
+.category-row.is-inactive .category-name {
+    color: var(--dash-muted);
+}
+
+.qr-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.table-groups {
+    display: grid;
+    gap: 20px;
+}
+
+.table-group-title {
+    margin: 0 0 10px;
+    color: var(--dash-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.table-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 10px;
+}
+
+.table-admin-card {
+    flex-direction: column;
+}
+
+.table-admin-card .dish-card-side {
+    justify-items: start;
+}
+
+.qr-dialog {
+    width: min(420px, calc(100% - 24px));
+}
+
+.qr-dialog-body header,
+.qr-dialog-body footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 18px 22px;
+}
+
+.qr-dialog-body header {
+    border-bottom: 1px solid var(--dash-line);
+}
+
+.qr-dialog-body footer {
+    flex-wrap: wrap;
+    border-top: 1px solid var(--dash-line);
+}
+
+.qr-dialog-body footer .menu-admin-button {
+    flex: 1;
+}
+
+.qr-preview {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 22px;
+    text-align: center;
+}
+
+.qr-preview img {
+    width: 240px;
+    height: 240px;
+    padding: 10px;
+    border-radius: 16px;
+    background: #FFFFFF;
+}
+
+.qr-preview p {
+    margin: 0;
+    color: var(--dash-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.qr-dialog-body .dish-form-error {
+    margin: 0 22px 12px;
+}
+
+@media (max-width: 680px) {
+    .qr-toolbar .menu-admin-button {
+        flex: 1 1 100%;
+    }
+
+    .table-admin-grid {
+        grid-template-columns: 1fr;
+    }
+}

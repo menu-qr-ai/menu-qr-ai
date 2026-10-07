@@ -65,6 +65,20 @@ def update_zone(
     data = payload.model_dump(exclude_unset=True)
     if data.get("name") is not None:
         _ensure_zone_name_available(db, restaurant_id, data["name"], zone_id=zone.id)
+    if data.get("is_active") is False and zone.is_active:
+        # Mirror of _validate_table_zone: an active table never lives in an inactive zone.
+        active_tables = db.scalar(
+            select(func.count(RestaurantTable.id)).where(
+                RestaurantTable.zone_id == zone.id,
+                RestaurantTable.is_active.is_(True),
+            )
+        )
+        if active_tables:
+            raise AppError(
+                "La zona tiene mesas activas. Desactívalas o muévelas antes.",
+                status_code=status.HTTP_409_CONFLICT,
+                code="zone_has_active_tables",
+            )
     for field, value in data.items():
         setattr(zone, field, value)
     zone.updated_at = datetime.utcnow()

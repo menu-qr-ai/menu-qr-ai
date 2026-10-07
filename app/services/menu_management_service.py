@@ -114,7 +114,7 @@ def delete_category(
     if has_dishes:
         # Dishes are never deleted (order history), so neither is their category.
         raise AppError(
-            "La categoria tiene platos. Muevelos a otra categoria antes de borrarla.",
+            "La categoría tiene platos. Muévelos a otra categoría antes de borrarla.",
             status_code=status.HTTP_409_CONFLICT,
             code="category_not_empty",
         )
@@ -131,7 +131,7 @@ def require_category(db: Session, restaurant_id: int, category_id: int) -> Categ
     )
     if category is None:
         raise AppError(
-            "Categoria no encontrada para este restaurante.",
+            "Categoría no encontrada para este restaurante.",
             status_code=status.HTTP_404_NOT_FOUND,
             code="category_not_found",
         )
@@ -153,7 +153,7 @@ def _ensure_category_name_available(
         statement = statement.where(Category.id != category_id)
     if db.scalar(statement) is not None:
         raise AppError(
-            "Ya existe una categoria con ese nombre.",
+            "Ya existe una categoría con ese nombre.",
             status_code=status.HTTP_409_CONFLICT,
             code="category_name_conflict",
         )
