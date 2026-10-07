@@ -97,3 +97,43 @@ class LoginRateLimiter:
     @staticmethod
     def _ip_key(ip: str) -> str:
         return f"ip:{ip}"
+
+
+class SlidingWindowRateLimiter:
+    """Per-key sliding window limiter, in memory and per process like the login one."""
+
+    def __init__(
+        self,
+        *,
+        limit: int,
+        window_seconds: int,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self.limit = limit
+        self.window_seconds = window_seconds
+        self.clock = clock
+        self._hits: dict[str, deque[float]] = {}
+        self._lock = threading.Lock()
+
+    def hit(self, key: str) -> int:
+        """Records a hit and returns 0, or the seconds to wait if the key is over the limit."""
+        now = self.clock()
+        with self._lock:
+            self._prune_all(now)
+            values = self._hits.setdefault(key, deque())
+            if len(values) >= self.limit:
+                return max(1, math.ceil(values[0] + self.window_seconds - now))
+            values.append(now)
+            return 0
+
+    def reset(self) -> None:
+        with self._lock:
+            self._hits.clear()
+
+    def _prune_all(self, now: float) -> None:
+        threshold = now - self.window_seconds
+        for key, values in list(self._hits.items()):
+            while values and values[0] <= threshold:
+                values.popleft()
+            if not values:
+                self._hits.pop(key, None)

@@ -1,9 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
+from starlette import status
 
 from app.core.access import Permission
+from app.core.config import settings
+from app.core.exceptions import AppError
+from app.core.rate_limit import SlidingWindowRateLimiter
 from app.database import get_db
 from app.dependencies.access import get_active_restaurant_id
 from app.dependencies.auth import require_current_user
@@ -11,16 +15,32 @@ from app.models import User
 from app.schemas.analytics import AnalyticsEventCreate, AnalyticsEventRead
 from app.services.analytics_event_service import count_events, create_event, list_recent_events
 from app.services.access_service import resolve_restaurant_access
+from app.services.login_security_service import client_ip_from_request
 
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
+
+# Generous on purpose: a full restaurant behind one shared WiFi IP must fit.
+analytics_rate_limiter = SlidingWindowRateLimiter(
+    limit=settings.analytics_rate_limit_events,
+    window_seconds=settings.analytics_rate_limit_window_seconds,
+)
 
 
 @router.post("/events", response_model=AnalyticsEventRead)
 def create_analytics_event(
     payload: AnalyticsEventCreate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    retry_after = analytics_rate_limiter.hit(client_ip_from_request(request))
+    if retry_after:
+        raise AppError(
+            "Demasiados eventos analytics. Intentalo mas tarde.",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            code="analytics_rate_limited",
+            headers={"Retry-After": str(retry_after)},
+        )
     return create_event(db, payload)
 
 

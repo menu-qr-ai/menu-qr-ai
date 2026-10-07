@@ -54,6 +54,20 @@ class Settings(BaseModel):
     database_url: str = Field(default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./menu.db"))
     openai_api_key: str | None = Field(default_factory=lambda: os.getenv("OPENAI_API_KEY"))
     openai_model: str = Field(default_factory=lambda: os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+    openai_timeout_seconds: float = Field(
+        default_factory=lambda: float(
+            os.getenv("OPENAI_TIMEOUT_SECONDS", "20")
+        ),
+        gt=0,
+        le=120,
+    )
+    openai_max_retries: int = Field(
+        default_factory=lambda: int(
+            os.getenv("OPENAI_MAX_RETRIES", "1")
+        ),
+        ge=0,
+        le=5,
+    )
     secret_key: str = Field(default_factory=lambda: os.getenv("SECRET_KEY", "change-me-in-production"))
     cors_origins: tuple[str, ...] = Field(
         default_factory=lambda: _parse_csv(
@@ -84,6 +98,20 @@ class Settings(BaseModel):
         ),
         ge=60,
         le=60 * 60 * 24,
+    )
+    analytics_rate_limit_events: int = Field(
+        default_factory=lambda: int(
+            os.getenv("ANALYTICS_RATE_LIMIT_EVENTS", "300")
+        ),
+        ge=10,
+        le=10_000,
+    )
+    analytics_rate_limit_window_seconds: int = Field(
+        default_factory=lambda: int(
+            os.getenv("ANALYTICS_RATE_LIMIT_WINDOW_SECONDS", "60")
+        ),
+        ge=1,
+        le=60 * 60,
     )
     log_level: str = Field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO"))
     templates_dir: Path = BASE_DIR / "app" / "templates"

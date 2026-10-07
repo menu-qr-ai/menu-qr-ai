@@ -7,7 +7,7 @@ SaaS para cartas QR multi-restaurante con FastAPI, SQLAlchemy, Jinja2, JavaScrip
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 copy .env.example .env
 ```
 
