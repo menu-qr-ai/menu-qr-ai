@@ -623,3 +623,134 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Equipo --- */
+
+.member-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(160px, 0.9fr) auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.member-form label {
+    display: grid;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.member-form input,
+.member-form select,
+.member-card-side select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid var(--dash-line-strong);
+    border-radius: 14px;
+    background: var(--dash-surface);
+    color: var(--dash-text);
+    font: inherit;
+    font-size: 16px;
+}
+
+.member-form-error {
+    margin: 12px 0 0;
+}
+
+.role-help {
+    margin-top: 16px;
+    color: var(--dash-muted);
+}
+
+.role-help summary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--dash-accent-dark);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.role-help dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 16px;
+    margin: 8px 0 0;
+}
+
+.role-help dt {
+    color: var(--dash-text);
+    font-weight: 600;
+}
+
+.role-help dd {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.member-list {
+    display: grid;
+    gap: 10px;
+}
+
+.member-card-side {
+    display: grid;
+    justify-items: end;
+    gap: 10px;
+    flex: 0 0 auto;
+    min-width: 220px;
+}
+
+.password-reveal {
+    display: grid;
+    gap: 14px;
+    padding: 22px;
+    text-align: center;
+}
+
+.password-reveal p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.temporary-password {
+    padding: 16px;
+    border: 1px dashed var(--dash-line-strong);
+    border-radius: 14px;
+    background: var(--dash-surface-soft);
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    user-select: all;
+    overflow-wrap: anywhere;
+}
+
+.password-reveal-warning {
+    color: var(--dash-muted);
+    font-size: 14px;
+}
+
+@media (max-width: 980px) {
+    .member-form {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 680px) {
+    .member-form,
+    .role-help dl {
+        grid-template-columns: 1fr;
+    }
+
+    .role-help dd {
+        margin-bottom: 6px;
+    }
+
+    .member-card-side {
+        width: 100%;
+        min-width: 0;
+        justify-items: stretch;
+    }
+}

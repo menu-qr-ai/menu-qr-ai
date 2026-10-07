@@ -1409,6 +1409,34 @@ select {
     background: #d9ad5b;
 }
 
+/* The global h1-h3 colour is dark; access screens sit on a dark background. */
+.access-page h1,
+.access-page h2,
+.access-page h3 {
+    color: inherit;
+}
+
+.access-page [hidden] {
+    display: none !important;
+}
+
+.access-success {
+    margin-top: 22px;
+    padding: 14px 16px;
+    border: 1px solid rgba(110, 190, 140, 0.4);
+    border-radius: 14px;
+    color: #c8ecd4;
+    background: rgba(110, 190, 140, 0.12);
+    line-height: 1.6;
+}
+
+.access-success a {
+    display: block;
+    margin-top: 6px;
+    color: #d9ad5b;
+    font-weight: 600;
+}
+
 .access-alert {
     margin-top: 22px;
     padding: 14px 16px;

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Equipo · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=38.1">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-team-admin>
+    {% set active_nav = "team" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Equipo</h1>
+                <p class="dashboard-subtitle">Da acceso a tu equipo con su email. Cada persona solo ve lo que necesita para su trabajo en este local.</p>
+            </div>
+        </header>
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel" aria-labelledby="addMemberTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="addMemberTitle">Añadir persona</h2>
+                    <p>Si aún no tiene cuenta, se crea con una contraseña temporal que verás una sola vez.</p>
+                </div>
+            </div>
+            <form id="memberCreateForm" class="member-form" autocomplete="off" novalidate>
+                <label>
+                    <span>Email *</span>
+                    <input name="email" type="email" maxlength="320" inputmode="email" placeholder="nombre@restaurante.com" required>
+                </label>
+                <label>
+                    <span>Nombre</span>
+                    <input name="full_name" type="text" maxlength="120" placeholder="Opcional">
+                </label>
+                <label>
+                    <span>Rol *</span>
+                    <select name="role" required>
+                        <option value="waiter">Camarero</option>
+                        <option value="cook">Cocina</option>
+                        <option value="manager">Encargado</option>
+                        <option value="viewer">Solo lectura</option>
+                        <option value="owner">Dueño</option>
+                    </select>
+                </label>
+                <button type="submit" class="menu-admin-button is-primary">Dar acceso</button>
+            </form>
+            <p id="memberFormError" class="dish-form-error member-form-error" role="alert" hidden></p>
+
+            <details class="role-help">
+                <summary>¿Qué puede hacer cada rol?</summary>
+                <dl>
+                    <dt>Camarero</dt><dd>Abre mesas, toma comandas, acepta los pedidos de los clientes y cobra.</dd>
+                    <dt>Cocina</dt><dd>Ve las comandas y las marca como en preparación, listas o servidas.</dd>
+                    <dt>Encargado</dt><dd>Todo lo anterior, más la carta, las mesas y QR, el inventario y los informes. No gestiona el equipo.</dd>
+                    <dt>Solo lectura</dt><dd>Consulta el panel y los informes, sin cambiar nada.</dd>
+                    <dt>Dueño</dt><dd>Control total del local, incluido el equipo. Da este rol solo a socios.</dd>
+                </dl>
+            </details>
+        </section>
+
+        <section class="menu-admin-panel" aria-labelledby="teamTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="teamTitle">Personas con acceso</h2>
+                    <p id="teamSummary">Cargando equipo...</p>
+                </div>
+            </div>
+            <div id="memberList" class="member-list"></div>
+        </section>
+    </div>
+</main>
+
+<dialog id="passwordDialog" class="dish-dialog qr-dialog" aria-labelledby="passwordDialogTitle">
+    <div class="qr-dialog-body">
+        <header>
+            <h2 id="passwordDialogTitle">Contraseña temporal</h2>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+        <div class="password-reveal">
+            <p id="passwordDialogIntro"></p>
+            <code id="temporaryPassword" class="temporary-password"></code>
+            <p class="password-reveal-warning">Apúntala o cópiala ahora: <strong>no se volverá a mostrar</strong>. Pídele que la cambie en «Contraseña» la primera vez que entre.</p>
+        </div>
+        <footer>
+            <button type="button" id="copyPasswordButton" class="menu-admin-button">Copiar</button>
+            <button type="button" class="menu-admin-button is-primary" data-close-dialog>Ya la tengo</button>
+        </footer>
+    </div>
+</dialog>
+
+<script id="teamAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ team_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/team_admin.js') }}?v=38.0" defer></script>
+{% endblock %}

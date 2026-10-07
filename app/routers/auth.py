@@ -14,8 +14,10 @@ from app.database import get_db
 from app.dependencies.auth import require_current_user
 from app.models import User
 from app.schemas.auth import AuthenticatedUserRead, LoginRequest
+from app.schemas.team import PasswordChange
 from app.core.access import role_home_path
 from app.services.access_service import list_user_memberships
+from app.services.team_service import change_own_password
 from app.services.login_security_service import (
     attempt_login,
     client_ip_from_request,
@@ -81,3 +83,14 @@ def authenticated_user(
         "next_url": "/app",
         "csrf_token": get_csrf_token(request.state.session),
     }
+
+
+@router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+def password_change(
+    payload: PasswordChange,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+) -> Response:
+    change_own_password(db, current_user, payload)
+    logger.info("password_changed user_id=%s", current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
