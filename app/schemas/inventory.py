@@ -101,12 +101,19 @@ class DishIngredientCreate(ORMModel):
     inventory_item_id: int
     quantity: float = Field(gt=0)
     unit: str = Field(min_length=1, max_length=32)
+    # Usable share after cleaning/trimming; 100 means no loss.
+    yield_percentage: float = Field(default=100, gt=0, le=100)
 
     @field_validator("unit", mode="before")
     @classmethod
     def normalize_recipe_unit(cls, value: str) -> str:
         normalized = str(value).strip().lower()
         return normalized
+
+
+class DishIngredientUpdate(ORMModel):
+    quantity: float | None = Field(default=None, gt=0)
+    yield_percentage: float | None = Field(default=None, gt=0, le=100)
 
 
 class DishIngredientRead(DishIngredientCreate):

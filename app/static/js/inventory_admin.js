@@ -171,6 +171,15 @@
         box.hidden = !message;
     }
 
+    const COST_UNIT_NAMES = {g: "gramo", kg: "kg", ml: "ml", l: "litro", unit: "unidad"};
+    function updateCostLabel() {
+        const unit = itemForm.elements.unit.value;
+        $("costLabel").textContent = `Coste por ${COST_UNIT_NAMES[unit] || unit} (€)`;
+        $("costHint").textContent = unit === "g" || unit === "ml"
+            ? "Ojo: precio por gramo o mililitro. Si tu proveedor te cobra por kilo o litro, usa kg o l como unidad."
+            : "Necesario para valorar mermas y escandallos.";
+    }
+
     function openItemDialog(item = null) {
         state.editingItemId = item ? item.id : null;
         itemForm.reset();
@@ -185,6 +194,7 @@
         fields.name.value = item?.name || "";
         fields.unit.value = item?.unit || "kg";
         fields.unit.disabled = Boolean(item?.unit_locked);
+        updateCostLabel();
         $("unitLockedHint").hidden = !item?.unit_locked;
         fields.minimum_stock.value = toInput(item?.minimum_stock || "");
         fields.ideal_stock.value = toInput(item?.ideal_stock || "");
@@ -245,6 +255,8 @@
             submit.disabled = false;
         }
     }
+
+    itemForm.elements.unit.addEventListener("change", updateCostLabel);
 
     itemForm.addEventListener("submit", (event) => {
         event.preventDefault();

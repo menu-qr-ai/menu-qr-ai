@@ -52,11 +52,18 @@ def _margin_percentage(
     return float(percentage)
 
 
+def _percentage(part: Decimal, whole: Decimal) -> float | None:
+    if whole <= ZERO_MONEY:
+        return None
+    return float(((part / whole) * Decimal(100)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+
 def _ingredient_line(link: DishIngredient) -> IngredientCostLine:
     item = link.inventory_item
     unit_cost = decimal_from_value(item.cost or 0, field_name="coste unitario")
-    quantity = decimal_from_value(link.quantity, field_name="cantidad")
-    line_cost = quantize_money(quantity * unit_cost)
+    # Cost what leaves the store room, not what reaches the plate.
+    gross_quantity = decimal_from_value(link.stock_quantity, field_name="cantidad")
+    line_cost = quantize_money(gross_quantity * unit_cost)
     return IngredientCostLine(
         ingredient_id=item.id,
         ingredient_name=item.name,
@@ -65,11 +72,16 @@ def _ingredient_line(link: DishIngredient) -> IngredientCostLine:
         unit_cost=float(unit_cost),
         line_cost=float(line_cost),
         missing_cost=item.cost is None,
+        recipe_line_id=link.id,
+        yield_percentage=link.yield_percentage or 100,
+        gross_quantity=round(link.stock_quantity, 4),
+        ingredient_unit=item.unit,
+        unit_mismatch=link.unit != item.unit,
     )
 
 
 def get_dish_costing(db: Session, restaurant_id: int, dish_id: int) -> DishCosting:
-    require_restaurant(db, restaurant_id)
+    restaurant = require_restaurant(db, restaurant_id)
     dish = _require_dish(db, restaurant_id, dish_id)
     recipe = _load_recipe(db, restaurant_id, dish_id)
     breakdown = [_ingredient_line(link) for link in recipe]
@@ -82,6 +94,9 @@ def get_dish_costing(db: Session, restaurant_id: int, dish_id: int) -> DishCosti
         field_name="precio de venta",
     )
     gross_margin = quantize_money(sale_price - total_cost)
+    vat = decimal_from_value(restaurant.vat_percentage or 0, field_name="IVA")
+    price_without_vat = quantize_money(sale_price / (Decimal(1) + vat / Decimal(100)))
+    net_margin = quantize_money(price_without_vat - total_cost)
     return DishCosting(
         restaurant_id=restaurant_id,
         dish_id=dish.id,
@@ -93,6 +108,13 @@ def get_dish_costing(db: Session, restaurant_id: int, dish_id: int) -> DishCosti
         has_recipe=bool(recipe),
         missing_costs=any(line.missing_cost for line in breakdown),
         ingredients_breakdown=breakdown,
+        vat_percentage=float(vat),
+        price_without_vat=float(price_without_vat),
+        food_cost_percentage=_percentage(total_cost, price_without_vat),
+        net_margin=float(net_margin),
+        net_margin_percentage=_percentage(net_margin, price_without_vat),
+        is_active=dish.is_active,
+        category_id=dish.category_id,
     )
 
 

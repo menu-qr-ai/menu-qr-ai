@@ -19,6 +19,12 @@
             </svg>
             Carta
         </a>
+        <a {% if active_nav == "recipes" %}class="active" aria-current="page"{% endif %} href="/admin/recipes">
+            <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Z"></path><path d="M4 17a2 2 0 0 1 2-2h12"></path><path d="M9 7h6"></path><path d="M9 11h4"></path>
+            </svg>
+            Recetas
+        </a>
         <a {% if active_nav == "dining" %}class="active" aria-current="page"{% endif %} href="/admin/dining">
             <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><path d="M14 14h3v3h-3z"></path><path d="M20 14v.01"></path><path d="M14 20h.01"></path><path d="M20 20h.01"></path>

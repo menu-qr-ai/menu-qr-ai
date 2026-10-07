@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -23,6 +23,8 @@ class Restaurant(Base):
     city = Column(String)
     country = Column(String)
     currency = Column(String, nullable=False, default="EUR")
+    # Menu prices include VAT; escandallos measure food cost without it.
+    vat_percentage = Column(Numeric(5, 2), nullable=False, default=10, server_default="10")
     default_language = Column(String, nullable=False, default="es")
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

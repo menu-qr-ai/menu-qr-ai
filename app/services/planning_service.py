@@ -133,15 +133,15 @@ def _priority(status: str, affected_count: int, demand_pressure: int) -> str:
 def _impact_lines(item: InventoryItem, links: list[DishIngredient]) -> list[DishStockImpact]:
     impacts: list[DishStockImpact] = []
     for link in links:
-        servings = round(item.current_stock / link.quantity, 2) if link.quantity > 0 else None
+        servings = round(item.current_stock / link.stock_quantity, 2) if link.stock_quantity > 0 else None
         impacts.append(
             DishStockImpact(
                 dish_id=link.dish_id,
                 dish_name=link.dish.name if link.dish else f"Plato #{link.dish_id}",
-                required_quantity=link.quantity,
+                required_quantity=link.stock_quantity,
                 unit=link.unit,
                 estimated_servings_remaining=servings,
-                is_blocked=item.current_stock < link.quantity,
+                is_blocked=item.current_stock < link.stock_quantity,
             )
         )
     return impacts
