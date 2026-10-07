@@ -762,6 +762,8 @@ html {
     .dashboard-sidebar nav {
         display: flex;
         overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--dash-line-strong) transparent;
     }
 
     .dashboard-sidebar nav a {
