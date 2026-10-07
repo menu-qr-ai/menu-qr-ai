@@ -1178,3 +1178,196 @@
         grid-row: 3;
     }
 }
+
+/* --- Pedidos --- */
+
+.purchase-settings-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.purchase-settings-form label {
+    display: grid;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.purchase-settings-form select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--dash-line-strong);
+    border-radius: 14px;
+    background: var(--dash-surface);
+    color: var(--dash-text);
+    font: inherit;
+    font-size: 16px;
+}
+
+.purchase-groups {
+    display: grid;
+    gap: 0;
+}
+
+.purchase-lines {
+    display: grid;
+    gap: 8px;
+}
+
+.purchase-line {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(150px, auto);
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--dash-line);
+    border-radius: 16px;
+    background: var(--dash-surface);
+}
+
+.purchase-line.is-excluded {
+    background: var(--dash-surface-soft);
+    opacity: 0.6;
+}
+
+.purchase-check input {
+    width: 22px;
+    height: 22px;
+    accent-color: var(--dash-accent);
+}
+
+.purchase-line-main {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.purchase-reason {
+    margin: 0;
+    color: var(--dash-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.purchase-line-amount {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+}
+
+.purchase-line-amount .input-suffix input {
+    width: 110px;
+}
+
+.purchase-line-cost {
+    color: var(--dash-muted);
+    font-size: 13px;
+}
+
+.receive-reference {
+    display: grid;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.receive-reference input {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--dash-line-strong);
+    border-radius: 14px;
+    background: var(--dash-surface);
+    color: var(--dash-text);
+    font: inherit;
+    font-size: 16px;
+}
+
+.receive-line {
+    grid-template-columns: minmax(0, 1.4fr) minmax(120px, 1fr) minmax(120px, 1fr);
+}
+
+.receive-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+@media (max-width: 760px) {
+    .purchase-settings-form {
+        grid-template-columns: 1fr;
+    }
+
+    .purchase-line {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .purchase-line-amount {
+        grid-column: 2;
+        justify-items: start;
+    }
+
+    .purchase-actions {
+        width: 100%;
+    }
+
+    .purchase-actions .menu-admin-button {
+        flex: 1 1 auto;
+    }
+
+    .receive-line {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .receive-line .recipe-line-name {
+        grid-column: 1 / -1;
+    }
+
+    .receive-actions .menu-admin-button {
+        flex: 1;
+    }
+}
+
+/* Print only the chosen supplier's order, as a clean list. */
+@media print {
+    body[data-print-group] .dashboard-sidebar,
+    body[data-print-group] .active-context,
+    body[data-print-group] .dashboard-header,
+    body[data-print-group] .purchase-settings,
+    body[data-print-group] .menu-admin-alert,
+    body[data-print-group] .purchase-actions,
+    body[data-print-group] .purchase-check,
+    body[data-print-group] .purchase-reason,
+    body[data-print-group] .purchase-line.is-excluded,
+    body[data-print-group] .dish-badges {
+        display: none !important;
+    }
+
+    body[data-print-group] .dashboard-shell {
+        display: block;
+        width: auto;
+        padding: 0;
+    }
+
+    body[data-print-group] .menu-admin-panel {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    body[data-print-group] .purchase-group:not(.is-print-target) {
+        display: none;
+    }
+
+    body[data-print-group] .purchase-line {
+        border: 0;
+        border-bottom: 1px solid #ccc;
+        border-radius: 0;
+    }
+
+    body[data-print-group] .purchase-line-amount input {
+        border: 0;
+        font-weight: 600;
+    }
+}
