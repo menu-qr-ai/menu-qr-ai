@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=41.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-purchasing-admin>
+    {% set active_nav = "purchasing" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Pedidos</h1>
+                <p class="dashboard-subtitle">Lo que deberías pedir a cada proveedor según tu consumo real y tu stock ideal. Revisa las cantidades, envía el pedido y registra la mercancía cuando llegue.</p>
+            </div>
+        </header>
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel purchase-settings" aria-label="Ajustes del pedido">
+            <form id="purchaseSettings" class="purchase-settings-form" novalidate>
+                <label>
+                    <span>El pedido debe cubrir</span>
+                    <div class="input-suffix">
+                        <input id="coverageInput" name="coverage_days" type="number" min="1" max="60" step="1" inputmode="numeric">
+                        <span>días</span>
+                    </div>
+                </label>
+                <label>
+                    <span>Calcular con el consumo de</span>
+                    <select id="rangeInput" name="range">
+                        <option value="7d">los últimos 7 días</option>
+                        <option value="30d">los últimos 30 días</option>
+                        <option value="90d">los últimos 90 días</option>
+                    </select>
+                </label>
+                <button type="submit" class="menu-admin-button is-primary">Recalcular</button>
+            </form>
+            <p class="field-hint">Pon los días que faltan hasta el siguiente pedido a ese proveedor, con algo de margen. Si un ingrediente no tiene consumo registrado, se repone hasta su stock ideal.</p>
+        </section>
+
+        <div id="purchaseGroups" class="purchase-groups"></div>
+    </div>
+</main>
+
+<dialog id="receiveDialog" class="dish-dialog recipe-dialog" aria-labelledby="receiveDialogTitle">
+    <form id="receiveForm" method="dialog" autocomplete="off" novalidate>
+        <div class="recipe-dialog-body">
+            <header>
+                <div>
+                    <h2 id="receiveDialogTitle">Recibir mercancía</h2>
+                    <p class="recipe-meta">Escribe lo que ha llegado de verdad. Deja a 0 lo que no ha venido.</p>
+                </div>
+                <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+            </header>
+            <div class="recipe-scroll">
+                <label class="receive-reference">
+                    <span>Albarán o factura</span>
+                    <input name="reference" type="text" maxlength="120" placeholder="Opcional">
+                </label>
+                <div id="receiveLines" class="recipe-lines"></div>
+                <p id="receiveFormError" class="dish-form-error" role="alert" hidden></p>
+                <div class="receive-actions">
+                    <button type="button" class="menu-admin-button" data-close-dialog>Cancelar</button>
+                    <button type="submit" id="receiveSubmitButton" class="menu-admin-button is-primary">Registrar entrada en el stock</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</dialog>
+
+<script id="purchasingAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ purchasing_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/purchasing_admin.js') }}?v=41.0" defer></script>
+{% endblock %}

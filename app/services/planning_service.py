@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 from datetime import datetime, timedelta
 
@@ -283,3 +284,95 @@ def list_critical_inventory_planning(
         for item in planning.items
         if item.status in {"out_of_stock", "critical"} or item.replenishment_priority in {"urgent", "high"}
     ]
+
+
+DEFAULT_COVERAGE_DAYS = 7
+# Orderable steps: nobody orders 0.137 kg.
+ORDER_STEPS = {"kg": 0.1, "l": 0.1, "g": 10, "ml": 10, "unit": 1}
+NO_SUPPLIER = "Sin proveedor"
+
+
+def _round_up_to_step(quantity: float, unit: str) -> float:
+    step = ORDER_STEPS.get(unit, 0.1)
+    # Small epsilon so 1.2000000001 does not become 1.3.
+    return round(math.ceil(quantity / step - 1e-9) * step, 3)
+
+
+def get_purchase_list(
+    db: Session,
+    restaurant_id: int,
+    *,
+    coverage_days: int = DEFAULT_COVERAGE_DAYS,
+    range_value: str | None = None,
+) -> dict:
+    """What to order of each ingredient, grouped by supplier.
+
+    Target stock is the larger of the ideal stock and the real average daily
+    consumption times the days the order must cover; the suggestion is the gap
+    to that target, rounded up to an orderable step. Nothing is ordered
+    automatically: this only proposes quantities.
+    """
+    planning = get_inventory_planning(db, restaurant_id=restaurant_id, range_value=range_value)
+    items_by_id = {item.id: item for item in list_inventory_items(db, restaurant_id=restaurant_id, active_only=True)}
+    suppliers: dict[str, list[dict]] = defaultdict(list)
+
+    for planned in planning.items:
+        item = items_by_id[planned.inventory_item_id]
+        consumption_target = (
+            planned.average_daily_consumption * coverage_days
+            if planned.average_daily_consumption
+            else 0
+        )
+        target = max(item.ideal_stock or 0, item.minimum_stock or 0, consumption_target)
+        gap = target - item.current_stock
+        if gap <= 0:
+            continue
+        quantity = _round_up_to_step(gap, item.unit)
+        if consumption_target > (item.ideal_stock or 0):
+            basis = "consumption"
+        elif item.ideal_stock:
+            basis = "ideal"
+        else:
+            basis = "minimum"
+        suppliers[(item.supplier or "").strip() or NO_SUPPLIER].append(
+            {
+                "inventory_item_id": item.id,
+                "name": item.name,
+                "unit": item.unit,
+                "current_stock": item.current_stock,
+                "minimum_stock": item.minimum_stock,
+                "ideal_stock": item.ideal_stock,
+                "average_daily_consumption": planned.average_daily_consumption,
+                "estimated_days_remaining": planned.estimated_days_remaining,
+                "target_stock": round(target, 3),
+                "suggested_quantity": quantity,
+                "basis": basis,
+                "priority": planned.replenishment_priority,
+                "unit_cost": item.cost,
+                "estimated_cost": round(quantity * item.cost, 2) if item.cost is not None else None,
+                "blocked_dishes_count": planned.blocked_dishes_count,
+            }
+        )
+
+    priority_rank = {"urgent": 0, "high": 1, "medium": 2, "monitor": 3, "low": 4}
+    groups = []
+    for supplier, lines in suppliers.items():
+        lines.sort(key=lambda line: (priority_rank.get(line["priority"], 5), line["name"]))
+        costs = [line["estimated_cost"] for line in lines]
+        groups.append(
+            {
+                "supplier": supplier,
+                "lines": lines,
+                "estimated_total": round(sum(cost for cost in costs if cost is not None), 2),
+                "has_missing_costs": any(cost is None for cost in costs),
+                "urgent_lines": sum(1 for line in lines if line["priority"] == "urgent"),
+            }
+        )
+    # Suppliers with urgent items first; "no supplier" always last.
+    groups.sort(key=lambda group: (group["supplier"] == NO_SUPPLIER, -group["urgent_lines"], group["supplier"]))
+    return {
+        "restaurant_id": restaurant_id,
+        "coverage_days": coverage_days,
+        "range": planning.range,
+        "groups": groups,
+    }

@@ -57,7 +57,9 @@ from app.services.inventory_waste_service import list_inventory_waste_losses, re
 from app.services.production_service import list_inventory_productions, process_inventory_production
 from app.services.purchase_intake_service import MAX_PURCHASE_INTAKE_LIMIT, list_purchase_intakes, receive_purchase_intake
 from app.services.planning_service import (
+    DEFAULT_COVERAGE_DAYS,
     get_inventory_planning,
+    get_purchase_list,
     get_inventory_planning_item,
     list_critical_inventory_planning,
 )
@@ -83,6 +85,25 @@ def inventory_management(
         active_restaurant_id=active_restaurant_id,
     )
     return get_inventory_management(db, access.restaurant_id)
+
+
+@router.get("/purchase-list")
+def inventory_purchase_list(
+    current_user: Annotated[User, Depends(require_current_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    restaurant_id: int | None = None,
+    coverage_days: int = Query(default=DEFAULT_COVERAGE_DAYS, ge=1, le=60),
+    range: str | None = None,
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        restaurant_id,
+        Permission.INVENTORY_WRITE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    return get_purchase_list(db, access.restaurant_id, coverage_days=coverage_days, range_value=range)
 
 
 @router.get("/items", response_model=list[InventoryItemRead])
