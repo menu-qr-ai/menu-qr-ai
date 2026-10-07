@@ -280,7 +280,7 @@ class PostgreSQLRuntimeTests(unittest.TestCase):
                 1,
                 settlement_id,
                 PaymentCreate(
-                    amount=Decimal("8.00"),
+                    amount="8.00",
                     method="card",
                     idempotency_key=(
                         f"postgres-race-{threading.get_ident()}"
