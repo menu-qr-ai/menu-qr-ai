@@ -113,6 +113,20 @@ class PostgreSQLRuntimeTests(unittest.TestCase):
     def _upgrade_head(self):
         self._run_alembic("upgrade", "head")
 
+    def test_render_start_sequence_seeds_demo_on_postgresql(self):
+        # Mirrors scripts/render_start.sh: migrations + one-time demo seed.
+        from tests.test_deploy_bootstrap import run_start_sequence
+
+        first = run_start_sequence(self.database_url)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertIn("demo seeded", first.stdout)
+        second = run_start_sequence(self.database_url)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertIn("already has restaurants", second.stdout)
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.exec_driver_sql("SELECT count(*) FROM restaurants").scalar(), 1)
+            self.assertGreater(connection.exec_driver_sql("SELECT count(*) FROM dish_ingredients").scalar(), 0)
+
     def test_all_revisions_upgrade_incrementally_on_postgresql(self):
         config = Config(str(PROJECT_ROOT / "alembic.ini"))
         script = ScriptDirectory.from_config(config)

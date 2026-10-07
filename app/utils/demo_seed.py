@@ -370,12 +370,12 @@ def _seed_inventory(db: Session, restaurant: Restaurant, dishes: list[Dish]) -> 
     }
 
 
-def _seed_demo_owner(db: Session, restaurant: Restaurant) -> User:
+def _seed_demo_owner(db: Session, restaurant: Restaurant, password: str) -> User:
     user = db.scalar(select(User).where(User.email == DEMO_OWNER_EMAIL))
     if user is None:
         user = User(
             email=DEMO_OWNER_EMAIL,
-            hashed_password=hash_password(DEMO_OWNER_PASSWORD),
+            hashed_password=hash_password(password),
             full_name="Owner Demo",
             role=RestaurantRole.OWNER.value,
             restaurant_id=restaurant.id,
@@ -453,9 +453,11 @@ def _seed_dining_room(db: Session, restaurant: Restaurant) -> dict[str, int]:
     }
 
 
-def seed_demo_database(db: Session) -> dict:
+def seed_demo_database(db: Session, *, owner_password: str = DEMO_OWNER_PASSWORD) -> dict:
+    """Load the demo restaurant. The default owner password is public (README):
+    anything reachable from the internet must pass its own."""
     restaurant = _get_or_create_restaurant(db)
-    owner = _seed_demo_owner(db, restaurant)
+    owner = _seed_demo_owner(db, restaurant, owner_password)
     dishes = _seed_menu(db, restaurant)
     event_count = _seed_analytics(db, restaurant, dishes)
     inventory_counts = _seed_inventory(db, restaurant, dishes)
