@@ -25,6 +25,12 @@
             </svg>
             Mesas y QR
         </a>
+        <a {% if active_nav == "inventory" %}class="active" aria-current="page"{% endif %} href="/admin/inventory">
+            <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 8 12 3 3 8v8l9 5 9-5z"></path><path d="m3 8 9 5 9-5"></path><path d="M12 13v8"></path><path d="m7.5 5.5 9 5"></path>
+            </svg>
+            Inventario
+        </a>
         {% if current_membership.role == "owner" %}
         <a {% if active_nav == "team" %}class="active" aria-current="page"{% endif %} href="/admin/team">
             <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">

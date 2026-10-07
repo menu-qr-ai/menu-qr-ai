@@ -40,6 +40,7 @@ from app.services.inventory_service import (
     create_inventory_movement,
     get_inventory_alerts,
     get_inventory_insights,
+    get_inventory_management,
     get_inventory_overview,
     list_inventory_items,
     require_inventory_item,
@@ -62,6 +63,23 @@ from app.services.access_service import authorize_restaurant, resolve_restaurant
 
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
+
+
+@router.get("/management")
+def inventory_management(
+    current_user: Annotated[User, Depends(require_current_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    restaurant_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        restaurant_id,
+        Permission.INVENTORY_WRITE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    return get_inventory_management(db, access.restaurant_id)
 
 
 @router.get("/items", response_model=list[InventoryItemRead])

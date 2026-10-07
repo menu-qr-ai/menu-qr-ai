@@ -48,6 +48,7 @@ def record_inventory_waste_loss(db: Session, payload: InventoryWasteLossCreate) 
                 ),
                 error_code="waste_cost_missing",
             ),
+            require_matching_unit=True,
         )
         current_stock = movement.inventory_item.current_stock
 

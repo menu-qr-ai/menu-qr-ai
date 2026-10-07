@@ -54,8 +54,14 @@ def require_recipe_ingredient(db: Session, restaurant_id: int, inventory_item_id
 def ensure_recipe_item_can_be_created(db: Session, payload: DishIngredientCreate) -> DishIngredientCreate:
     require_restaurant(db, payload.restaurant_id)
     require_recipe_dish(db, payload.restaurant_id, payload.dish_id)
-    require_recipe_ingredient(db, payload.restaurant_id, payload.inventory_item_id)
+    item = require_recipe_ingredient(db, payload.restaurant_id, payload.inventory_item_id)
     unit = validate_recipe_unit(payload.unit)
+    if unit != item.unit:
+        raise AppError(
+            f"La receta debe usar la unidad del ingrediente ({item.unit}). No se convierten unidades.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="recipe_unit_mismatch",
+        )
     existing = db.scalar(
         select(DishIngredient).where(
             DishIngredient.restaurant_id == payload.restaurant_id,

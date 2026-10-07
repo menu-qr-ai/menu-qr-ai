@@ -40,8 +40,21 @@ class InventoryItemBase(ORMModel):
         return normalized or None
 
 
+def _validate_item_unit(value: str | None) -> str | None:
+    # Movements only accept these units, so an item in any other unit could never hold stock.
+    if value is None:
+        return None
+    normalized = value.lower()
+    if normalized not in RECIPE_UNITS:
+        raise ValueError(f"Unidad no admitida. Usa una de: {', '.join(sorted(RECIPE_UNITS))}.")
+    return normalized
+
+
 class InventoryItemCreate(InventoryItemBase):
-    pass
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, value: str) -> str:
+        return _validate_item_unit(value)
 
 
 class InventoryItemUpdate(ORMModel):
@@ -61,6 +74,10 @@ class InventoryItemUpdate(ORMModel):
         normalized = value.strip()
         return normalized or None
 
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, value: str | None) -> str | None:
+        return _validate_item_unit(value)
 
 class InventoryItemRead(InventoryItemBase):
     id: int

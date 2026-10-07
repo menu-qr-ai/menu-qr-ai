@@ -754,3 +754,140 @@
         justify-items: stretch;
     }
 }
+
+/* --- Inventario --- */
+
+.stock-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.stock-summary-card {
+    display: grid;
+    gap: 2px;
+    padding: 18px;
+    border: 1px solid var(--dash-line);
+    border-left-width: 6px;
+    border-radius: 20px;
+    background: var(--dash-surface);
+    color: var(--dash-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: var(--dash-shadow);
+}
+
+.stock-summary-card strong {
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.stock-summary-card span {
+    color: var(--dash-muted);
+}
+
+.stock-summary-card.is-critical { border-left-color: var(--dash-danger); }
+.stock-summary-card.is-warning { border-left-color: var(--dash-gold); }
+.stock-summary-card.is-ok { border-left-color: var(--dash-accent); }
+
+.stock-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stock-badge.is-critical {
+    background: rgba(184, 92, 74, 0.16);
+    color: var(--dash-danger);
+}
+
+.stock-badge.is-warning {
+    background: rgba(216, 166, 75, 0.2);
+    color: #7A5718;
+}
+
+.stock-badge.is-ok {
+    background: var(--dash-accent-soft);
+    color: var(--dash-accent-dark);
+}
+
+.stock-card.is-out {
+    border-color: rgba(184, 92, 74, 0.45);
+}
+
+.stock-card-side {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+
+.stock-amount {
+    font-size: 22px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.stock-card.is-out .stock-amount {
+    color: var(--dash-danger);
+}
+
+.stock-limits {
+    color: var(--dash-muted);
+    font-size: 13px;
+}
+
+.field-hint {
+    color: var(--dash-muted);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.movement-context {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--dash-surface-soft);
+    line-height: 1.5;
+}
+
+.movement-preview {
+    margin: 0;
+    color: var(--dash-accent-dark);
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stock-badge.is-warning {
+        color: var(--dash-sand);
+    }
+}
+
+@media (max-width: 680px) {
+    .stock-summary {
+        gap: 8px;
+    }
+
+    .stock-summary-card {
+        padding: 12px;
+    }
+
+    .stock-summary-card strong {
+        font-size: 24px;
+    }
+
+    .stock-summary-card span {
+        font-size: 13px;
+    }
+
+    .stock-card-side {
+        width: 100%;
+        justify-items: start;
+    }
+}

@@ -13,7 +13,7 @@ def money(value: float) -> float:
 def require_inventory_item_cost(item: InventoryItem, error_code: str = "historical_cost_missing") -> float:
     if item.cost is None:
         raise AppError(
-            "La operacion requiere coste unitario historico para el ingrediente.",
+            "El ingrediente no tiene coste. Añádelo antes de registrar esta operación.",
             status_code=status.HTTP_400_BAD_REQUEST,
             code=error_code,
         )
