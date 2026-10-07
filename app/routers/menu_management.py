@@ -10,6 +10,7 @@ from app.models import User
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 from app.schemas.dish import DishRead, DishUpdate
 from app.services.dish_service import update_dish
+from app.services.recipe_management_service import get_recipe_management
 from app.services.menu_management_service import (
     create_category,
     delete_category,
@@ -75,3 +76,12 @@ def dish_update(
     db: Session = Depends(get_db),
 ):
     return update_dish(db, current_user, restaurant_id, dish_id, payload)
+
+
+@router.get("/recipes")
+def recipe_management_detail(
+    restaurant_id: int,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+):
+    return get_recipe_management(db, current_user, restaurant_id)

@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from fastapi import Query
+from starlette import status
 from sqlalchemy.orm import Session
 
 from app.core.access import Permission
@@ -13,6 +14,7 @@ from app.models import User
 from app.schemas.inventory import (
     DishIngredientCreate,
     DishIngredientRead,
+    DishIngredientUpdate,
     InventoryAlertRead,
     InventoryAdjustmentCreate,
     InventoryAdjustmentResult,
@@ -60,6 +62,7 @@ from app.services.planning_service import (
     list_critical_inventory_planning,
 )
 from app.services.access_service import authorize_restaurant, resolve_restaurant_access
+from app.services.technical_recipe_service import delete_recipe_line, require_recipe_line, update_recipe_line
 
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
@@ -129,6 +132,30 @@ def dish_ingredient_create(
 ):
     authorize_restaurant(db, current_user, payload.restaurant_id, Permission.INVENTORY_WRITE)
     return create_dish_ingredient(db, payload)
+
+
+@router.patch("/dish-ingredients/{recipe_line_id}", response_model=DishIngredientRead)
+def dish_ingredient_update(
+    recipe_line_id: int,
+    payload: DishIngredientUpdate,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+):
+    link = require_recipe_line(db, recipe_line_id)
+    authorize_restaurant(db, current_user, link.restaurant_id, Permission.INVENTORY_WRITE)
+    return update_recipe_line(db, link, payload)
+
+
+@router.delete("/dish-ingredients/{recipe_line_id}", status_code=status.HTTP_204_NO_CONTENT)
+def dish_ingredient_delete(
+    recipe_line_id: int,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+):
+    link = require_recipe_line(db, recipe_line_id)
+    authorize_restaurant(db, current_user, link.restaurant_id, Permission.INVENTORY_WRITE)
+    delete_recipe_line(db, link)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/movements", response_model=InventoryMovementRead)

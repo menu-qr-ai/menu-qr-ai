@@ -375,7 +375,7 @@ def _dish_is_available(
         and link.inventory_item.restaurant_id == dish.restaurant_id
         and link.restaurant_id == dish.restaurant_id
         and link.inventory_item.current_stock
-        >= link.quantity * quantity
+        >= link.stock_quantity * quantity
         for link in dish.dish_ingredients
     )
 
@@ -412,7 +412,7 @@ def _validate_dish_quantities(
             ):
                 _raise_dish_unavailable()
             ingredient_requirements[item.id] += (
-                link.quantity * quantity
+                link.stock_quantity * quantity
             )
             ingredients[item.id] = item
     if any(

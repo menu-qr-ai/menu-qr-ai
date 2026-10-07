@@ -58,7 +58,7 @@ def value_recipe_consumption(
     *,
     error_code: str = "historical_cost_missing",
 ) -> tuple[float, float, float]:
-    quantity = link.quantity * quantity_multiplier
+    quantity = link.stock_quantity * quantity_multiplier
     unit_cost = require_inventory_item_cost(link.inventory_item, error_code=error_code)
     return quantity, unit_cost, money(quantity * unit_cost)
 

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Recetas · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=40.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-recipes-admin>
+    {% set active_nav = "recipes" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Recetas y escandallo</h1>
+                <p class="dashboard-subtitle">Qué lleva cada plato y cuánto te cuesta. Con las recetas, las ventas descuentan el stock solas y sabes el margen real de cada plato.</p>
+            </div>
+        </header>
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel costing-settings" aria-label="Ajustes del escandallo">
+            <form id="vatForm" class="costing-setting" novalidate>
+                <label for="vatInput">IVA incluido en tus precios</label>
+                <div class="input-suffix">
+                    <input id="vatInput" name="vat" type="text" inputmode="decimal">
+                    <span>%</span>
+                </div>
+                <button type="submit" class="menu-admin-button is-small">Guardar</button>
+            </form>
+            <div class="costing-setting">
+                <label for="targetInput">Objetivo de coste de materia prima</label>
+                <div class="input-suffix">
+                    <input id="targetInput" type="text" inputmode="decimal" value="30">
+                    <span>%</span>
+                </div>
+                <small class="field-hint">Habitual entre 25 % y 35 %. Solo se guarda en este navegador.</small>
+            </div>
+        </section>
+
+        <section class="stock-summary costing-summary" aria-label="Resumen de escandallos">
+            <div class="stock-summary-card is-ok"><strong id="summaryAverage">—</strong><span>coste medio</span></div>
+            <button type="button" class="stock-summary-card is-critical" data-summary-filter="over">
+                <strong id="summaryOver">0</strong><span>por encima del objetivo</span>
+            </button>
+            <button type="button" class="stock-summary-card is-warning" data-summary-filter="incomplete">
+                <strong id="summaryIncomplete">0</strong><span>sin receta o sin costes</span>
+            </button>
+        </section>
+
+        <section class="menu-admin-panel" aria-labelledby="dishesTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="dishesTitle">Platos</h2>
+                    <p>Los porcentajes se calculan sobre el precio sin IVA.</p>
+                </div>
+            </div>
+            <div class="dish-toolbar">
+                <label class="sr-only" for="dishSearch">Buscar plato</label>
+                <input id="dishSearch" type="search" placeholder="Buscar plato..." autocomplete="off">
+                <label class="sr-only" for="dishFilter">Filtrar</label>
+                <select id="dishFilter">
+                    <option value="all">Todos los platos</option>
+                    <option value="over">Por encima del objetivo</option>
+                    <option value="incomplete">Sin receta o sin costes</option>
+                </select>
+                <span></span>
+            </div>
+            <div id="dishList" class="dish-list"></div>
+        </section>
+    </div>
+</main>
+
+<dialog id="recipeDialog" class="dish-dialog recipe-dialog" aria-labelledby="recipeDialogTitle">
+    <div class="recipe-dialog-body">
+        <header>
+            <div>
+                <h2 id="recipeDialogTitle">Receta</h2>
+                <p id="recipeDialogMeta" class="recipe-meta"></p>
+            </div>
+            <button type="button" class="dialog-close" data-close-dialog aria-label="Cerrar">&times;</button>
+        </header>
+
+        <div class="recipe-scroll">
+            <div id="recipeWarnings"></div>
+            <div id="recipeLines" class="recipe-lines"></div>
+
+            <form id="lineCreateForm" class="recipe-add" autocomplete="off" novalidate>
+                <h3>Añadir ingrediente</h3>
+                <div class="recipe-add-grid">
+                    <label>
+                        <span>Ingrediente</span>
+                        <select name="inventory_item_id"></select>
+                    </label>
+                    <label>
+                        <span id="addQuantityLabel">Cantidad en el plato</span>
+                        <input name="quantity" type="text" inputmode="decimal" placeholder="0,15">
+                    </label>
+                    <label>
+                        <span>Aprovechamiento</span>
+                        <div class="input-suffix">
+                            <input name="yield_percentage" type="text" inputmode="decimal" value="100">
+                            <span>%</span>
+                        </div>
+                    </label>
+                    <button type="submit" class="menu-admin-button is-primary">Añadir</button>
+                </div>
+                <small class="field-hint">Aprovechamiento: la parte útil tras limpiar. Si de 1 kg de pescado entero aprovechas 700 g, pon 70 %. El coste y el stock se calculan con lo que sale del almacén.</small>
+                <p id="lineFormError" class="dish-form-error" role="alert" hidden></p>
+            </form>
+
+            <dl id="costingTotals" class="costing-totals"></dl>
+        </div>
+    </div>
+</dialog>
+
+<script id="recipesAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ recipes_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/recipes_admin.js') }}?v=40.0" defer></script>
+{% endblock %}

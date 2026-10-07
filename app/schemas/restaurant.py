@@ -20,6 +20,8 @@ class RestaurantBase(ORMModel):
     country: str | None = Field(default=None, max_length=120)
     currency: str = Field(default="EUR", min_length=3, max_length=8)
     default_language: str = Field(default="es", min_length=2, max_length=12)
+    # VAT included in menu prices (10 for Spanish hospitality).
+    vat_percentage: float = Field(default=10, ge=0, le=30)
     is_active: bool = True
 
     @field_validator("slug", "currency", "default_language", mode="before")
@@ -50,6 +52,7 @@ class RestaurantUpdate(ORMModel):
     country: str | None = Field(default=None, max_length=120)
     currency: str | None = Field(default=None, min_length=3, max_length=8)
     default_language: str | None = Field(default=None, min_length=2, max_length=12)
+    vat_percentage: float | None = Field(default=None, ge=0, le=30)
     is_active: bool | None = None
 
     @field_validator("slug", "currency", "default_language", mode="before")

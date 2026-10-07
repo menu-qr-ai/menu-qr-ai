@@ -4,7 +4,7 @@ from starlette import status
 
 from app.core.exceptions import AppError
 from app.models import Dish, DishIngredient, InventoryItem
-from app.schemas.inventory import DishIngredientCreate, RECIPE_UNITS
+from app.schemas.inventory import DishIngredientCreate, DishIngredientUpdate, RECIPE_UNITS
 from app.schemas.recipe import IngredientRead, RecipeItemRead, RecipeRead
 from app.services.restaurant_service import require_restaurant
 
@@ -130,3 +130,30 @@ def get_recipe(db: Session, restaurant_id: int, dish_id: int) -> RecipeRead:
         is_complete=bool(items),
         items=[_recipe_item_to_schema(item) for item in items],
     )
+
+
+def require_recipe_line(db: Session, recipe_line_id: int) -> DishIngredient:
+    link = db.get(DishIngredient, recipe_line_id)
+    if link is None:
+        raise AppError(
+            "Línea de receta no encontrada.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            code="recipe_line_not_found",
+        )
+    return link
+
+
+def update_recipe_line(db: Session, link: DishIngredient, payload: DishIngredientUpdate) -> DishIngredient:
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(link, field, value)
+    db.commit()
+    db.refresh(link)
+    return link
+
+
+def delete_recipe_line(db: Session, link: DishIngredient) -> None:
+    # Past consumption lives in the movement ledger, so removing a line
+    # never rewrites history; it only affects future sales and costing.
+    db.delete(link)
+    db.commit()

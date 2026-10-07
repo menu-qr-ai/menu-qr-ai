@@ -121,7 +121,7 @@ DEMO_MENU = {
 }
 
 DEMO_INVENTORY_ITEMS = {
-    "Mozzarella": {"unit": "g", "stock": 180, "minimum": 250, "ideal": 900, "cost": 4.2, "supplier": "Lacteos Norte"},
+    "Mozzarella": {"unit": "kg", "stock": 0.18, "minimum": 0.25, "ideal": 0.9, "cost": 4.2, "supplier": "Lacteos Norte"},
     "Tomate": {"unit": "kg", "stock": 6, "minimum": 4, "ideal": 12, "cost": 2.1, "supplier": "Huerta Madrid"},
     "Masa de pizza": {"unit": "unit", "stock": 12, "minimum": 8, "ideal": 20, "cost": 0.8, "supplier": "Obrador Central"},
     "Albahaca": {"unit": "kg", "stock": 0.3, "minimum": 0.5, "ideal": 1.2, "cost": 9.5, "supplier": "Verdes Frescos"},
@@ -135,7 +135,7 @@ DEMO_INVENTORY_ITEMS = {
 
 DEMO_DISH_INGREDIENTS = {
     "Pizza Margarita": [
-        ("Mozzarella", 150, "g"),
+        ("Mozzarella", 0.15, "kg"),
         ("Tomate", 0.12, "kg"),
         ("Masa de pizza", 1, "unit"),
         ("Albahaca", 0.02, "kg"),

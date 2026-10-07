@@ -5,7 +5,7 @@
 
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=39.0">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=40.0">
 {% endblock %}
 
 {% block body %}
@@ -94,9 +94,9 @@
                 <input name="ideal_stock" type="text" inputmode="decimal" placeholder="0">
             </label>
             <label>
-                <span>Coste por unidad (€)</span>
+                <span id="costLabel">Coste por unidad (€)</span>
                 <input name="cost" type="text" inputmode="decimal" placeholder="2,10">
-                <small class="field-hint">Necesario para valorar mermas.</small>
+                <small id="costHint" class="field-hint">Necesario para valorar mermas y escandallos.</small>
             </label>
             <label>
                 <span>Proveedor</span>
@@ -169,5 +169,5 @@
 
 {% block scripts %}
     <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
-    <script src="{{ url_for('static', path='js/inventory_admin.js') }}?v=39.0" defer></script>
+    <script src="{{ url_for('static', path='js/inventory_admin.js') }}?v=40.0" defer></script>
 {% endblock %}

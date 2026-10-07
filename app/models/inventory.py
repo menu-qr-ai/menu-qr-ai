@@ -35,20 +35,30 @@ class DishIngredient(Base):
         UniqueConstraint("restaurant_id", "dish_id", "inventory_item_id", name="uq_dish_ingredients_recipe_item"),
         CheckConstraint("quantity > 0", name="ck_dish_ingredients_quantity_positive"),
         CheckConstraint("unit IN ('g', 'kg', 'ml', 'l', 'unit')", name="ck_dish_ingredients_unit_allowed"),
+        CheckConstraint("yield_percentage > 0 AND yield_percentage <= 100", name="ck_dish_ingredients_yield_range"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
     dish_id = Column(Integer, ForeignKey("dishes.id"), nullable=False, index=True)
     inventory_item_id = Column(Integer, ForeignKey("inventory_items.id"), nullable=False, index=True)
+    # Net quantity that ends up in the dish.
     quantity = Column(Float, nullable=False)
     unit = Column(String, nullable=False)
+    # Usable share after cleaning/trimming (e.g. 70 for whole fish).
+    yield_percentage = Column(Float, nullable=False, default=100, server_default="100")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     restaurant = relationship("Restaurant", back_populates="dish_ingredients")
     dish = relationship("Dish", back_populates="dish_ingredients")
     inventory_item = relationship("InventoryItem", back_populates="dish_ingredients")
+
+    @property
+    def stock_quantity(self) -> float:
+        """Gross quantity taken from stock per serving: the single source for
+        costing, availability, consumption and planning."""
+        return self.quantity * 100 / (self.yield_percentage or 100)
 
 
 class InventoryMovement(Base):
