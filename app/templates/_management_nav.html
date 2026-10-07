@@ -43,6 +43,12 @@
             </svg>
             Pedidos
         </a>
+        <a {% if active_nav == "leftovers" %}class="active" aria-current="page"{% endif %} href="/admin/leftovers">
+            <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2v4"></path><path d="M5 9a7 7 0 0 0 14 0Z"></path><path d="M5 9h14"></path><path d="M9 21h6"></path><path d="M12 16v5"></path>
+            </svg>
+            Aprovechamiento
+        </a>
         {% if current_membership.role == "owner" %}
         <a {% if active_nav == "team" %}class="active" aria-current="page"{% endif %} href="/admin/team">
             <svg class="dash-icon" viewBox="0 0 24 24" aria-hidden="true">

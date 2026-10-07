@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Aprovechamiento · {{ restaurant.name }} | HostAI{% endblock %}
+{% block body_class %}dashboard-page menu-admin-page{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}?v=36.3">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/menu_admin.css') }}?v=42.0">
+{% endblock %}
+
+{% block body %}
+<main class="dashboard-shell" data-leftovers-admin>
+    {% set active_nav = "leftovers" %}
+    {% include "_management_nav.html" %}
+
+    <div class="dashboard-content">
+        {% include "_active_context.html" %}
+
+        <header class="dashboard-header">
+            <div>
+                <p class="dashboard-eyebrow">Gestión</p>
+                <h1>Aprovechamiento</h1>
+                <p class="dashboard-subtitle">Ingredientes que conviene gastar antes de que se pierdan: los que sobran, los que rotan despacio y los que ya has tenido que tirar. Te decimos qué platos de tu carta los usan y, si quieres, la IA te propone platos nuevos.</p>
+            </div>
+        </header>
+
+        {% if not leftovers_bootstrap.ai_available %}
+        <div class="menu-admin-notice" role="note">
+            <strong>Ideas con IA desactivadas.</strong>
+            Hace falta configurar la clave de OpenAI (OPENAI_API_KEY). Las sugerencias con los platos de tu carta funcionan igual.
+        </div>
+        {% endif %}
+
+        <div id="menuAdminAlert" class="menu-admin-alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="menu-admin-panel" aria-labelledby="leftoversTitle">
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="leftoversTitle">Ingredientes a aprovechar</h2>
+                    <p id="leftoversSummary">Cargando...</p>
+                </div>
+            </div>
+            <div id="leftoverList" class="dish-list"></div>
+        </section>
+
+        <section id="ideasPanel" class="menu-admin-panel" aria-labelledby="ideasTitle" hidden>
+            <div class="menu-admin-panel-heading">
+                <div>
+                    <h2 id="ideasTitle">Ideas de la IA</h2>
+                    <p>El coste lo calcula HostAI con tus precios reales. Revísalas como lo harías con una propuesta de tu equipo.</p>
+                </div>
+            </div>
+            <div id="ideaList" class="dish-list"></div>
+        </section>
+
+        <div class="ideas-bar" id="ideasBar" hidden>
+            <span id="ideasSelection"></span>
+            <button type="button" id="ideasButton" class="menu-admin-button is-primary">Pedir ideas a la IA</button>
+        </div>
+    </div>
+</main>
+
+<script id="leftoversAdminBootstrap" type="application/json" nonce="{{ csp_nonce(request) }}">{{ leftovers_bootstrap | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', path='js/admin_common.js') }}?v=37.0" defer></script>
+    <script src="{{ url_for('static', path='js/leftovers_admin.js') }}?v=42.1" defer></script>
+{% endblock %}

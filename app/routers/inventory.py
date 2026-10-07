@@ -3,10 +3,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
 from fastapi import Query
+from pydantic import BaseModel, Field
 from starlette import status
 from sqlalchemy.orm import Session
 
 from app.core.access import Permission
+from app.core.exceptions import AppError
+from app.core.rate_limit import SlidingWindowRateLimiter
 from app.database import get_db
 from app.dependencies.access import get_active_restaurant_id
 from app.dependencies.auth import require_current_user
@@ -64,10 +67,19 @@ from app.services.planning_service import (
     list_critical_inventory_planning,
 )
 from app.services.access_service import authorize_restaurant, resolve_restaurant_access
+from app.services.leftovers_service import MAX_IDEA_INGREDIENTS, generate_leftover_ideas, get_leftovers
 from app.services.technical_recipe_service import delete_recipe_line, require_recipe_line, update_recipe_line
 
 
 router = APIRouter(prefix="/api/inventory", tags=["Inventory"])
+
+# Each call costs OpenAI money: cap it per restaurant.
+leftover_ideas_rate_limiter = SlidingWindowRateLimiter(limit=20, window_seconds=60 * 60)
+
+
+class LeftoverIdeasRequest(BaseModel):
+    restaurant_id: int
+    ingredient_ids: list[int] = Field(min_length=1, max_length=MAX_IDEA_INGREDIENTS)
 
 
 @router.get("/management")
@@ -104,6 +116,41 @@ def inventory_purchase_list(
         active_restaurant_id=active_restaurant_id,
     )
     return get_purchase_list(db, access.restaurant_id, coverage_days=coverage_days, range_value=range)
+
+
+@router.get("/leftovers")
+def inventory_leftovers(
+    current_user: Annotated[User, Depends(require_current_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    restaurant_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        restaurant_id,
+        Permission.INVENTORY_WRITE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    return get_leftovers(db, current_user, access.restaurant_id)
+
+
+@router.post("/leftovers/ideas")
+def inventory_leftover_ideas(
+    payload: LeftoverIdeasRequest,
+    current_user: Annotated[User, Depends(require_current_user)],
+    db: Session = Depends(get_db),
+):
+    authorize_restaurant(db, current_user, payload.restaurant_id, Permission.INVENTORY_WRITE)
+    retry_after = leftover_ideas_rate_limiter.hit(f"restaurant:{payload.restaurant_id}")
+    if retry_after:
+        raise AppError(
+            "Has pedido muchas ideas en la última hora. Vuelve a intentarlo un poco más tarde.",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            code="leftover_ideas_rate_limited",
+            headers={"Retry-After": str(retry_after)},
+        )
+    return generate_leftover_ideas(db, current_user, payload.restaurant_id, payload.ingredient_ids)
 
 
 @router.get("/items", response_model=list[InventoryItemRead])

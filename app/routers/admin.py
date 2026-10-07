@@ -13,6 +13,7 @@ from app.services.access_service import authorize_restaurant, list_user_membersh
 from app.services.admin_service import get_admin_dashboard_data
 from app.services.dining_setup_service import get_dining_setup, get_printable_table_qrs
 from app.services.inventory_service import get_inventory_management
+from app.services.leftovers_service import get_leftovers
 from app.services.menu_management_service import get_menu_management
 from app.services.planning_service import get_purchase_list
 from app.services.recipe_management_service import get_recipe_management
@@ -311,6 +312,37 @@ def admin_purchasing(
                 "restaurantName": restaurant.name,
                 "currency": restaurant.currency or "EUR",
                 **get_purchase_list(db, restaurant.id),
+            },
+        },
+    )
+
+
+@router.get("/leftovers")
+def admin_leftovers(
+    request: Request,
+    current_user: Annotated[User, Depends(require_web_user)],
+    active_restaurant_id: Annotated[int | None, Depends(get_active_restaurant_id)],
+    db: Session = Depends(get_db),
+):
+    access = resolve_restaurant_access(
+        db,
+        current_user,
+        None,
+        Permission.INVENTORY_WRITE,
+        active_restaurant_id=active_restaurant_id,
+    )
+    restaurant = require_restaurant(db, access.restaurant_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/leftovers.html",
+        context={
+            "restaurant": restaurant,
+            "current_user": current_user,
+            "current_membership": access,
+            "leftovers_bootstrap": {
+                "restaurantId": restaurant.id,
+                "currency": restaurant.currency or "EUR",
+                **get_leftovers(db, current_user, restaurant.id),
             },
         },
     )
