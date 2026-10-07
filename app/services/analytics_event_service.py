@@ -22,6 +22,21 @@ ALLOWED_ANALYTICS_EVENTS = {
     "sale_processed",
 }
 
+# Events the anonymous public endpoint may record. Business events such as
+# sale_processed are emitted only by internal services (fulfillment), because
+# they feed predictions and business insights.
+PUBLIC_ANALYTICS_EVENTS = frozenset(
+    {
+        "qr_scan",
+        "menu_view",
+        "language_change",
+        "dish_view",
+        "search",
+        "translation_request",
+    }
+)
+MAX_PUBLIC_METADATA_BYTES = 2048
+
 
 def _serialize_metadata(metadata: dict[str, Any] | None) -> str | None:
     if not metadata:
@@ -98,7 +113,24 @@ def create_event_record(db: Session, payload: AnalyticsEventCreate) -> Analytics
     return event
 
 
+def _validate_public_payload(payload: AnalyticsEventCreate) -> None:
+    if _validate_event_type(payload.event_type) not in PUBLIC_ANALYTICS_EVENTS:
+        raise AppError(
+            "Tipo de evento analytics no permitido.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="invalid_analytics_event_type",
+        )
+    serialized = _serialize_metadata(payload.metadata)
+    if serialized is not None and len(serialized.encode("utf-8")) > MAX_PUBLIC_METADATA_BYTES:
+        raise AppError(
+            "Metadata analytics demasiado grande.",
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            code="analytics_metadata_too_large",
+        )
+
+
 def create_event(db: Session, payload: AnalyticsEventCreate) -> dict[str, Any]:
+    _validate_public_payload(payload)
     event = create_event_record(db, payload)
     db.commit()
     db.refresh(event)

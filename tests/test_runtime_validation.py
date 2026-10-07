@@ -2,10 +2,13 @@ import unittest
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from app.database import get_db
+from app.database import Base, get_db
 from app.main import app
 
 
@@ -71,6 +74,24 @@ class RuntimeValidationTests(unittest.TestCase):
         self.assertEqual(response.json()["scheme"], "http")
 
     def test_request_logging_uses_validated_scope_client(self):
+        # Isolated schema: never depend on the developer's DATABASE_URL.
+        engine = create_engine(
+            "sqlite://",
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        self.addCleanup(engine.dispose)
+        Base.metadata.create_all(bind=engine)
+        session_factory = sessionmaker(bind=engine)
+
+        def isolated_database():
+            db = session_factory()
+            try:
+                yield db
+            finally:
+                db.close()
+
+        app.dependency_overrides[get_db] = isolated_database
         with self.assertLogs("app.requests", level="INFO") as logs:
             with TestClient(app) as client:
                 response = client.get("/health")
